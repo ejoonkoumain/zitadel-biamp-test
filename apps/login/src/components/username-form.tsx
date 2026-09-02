@@ -2,6 +2,9 @@
 
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { sendLoginname } from "@/lib/server/loginname";
+import { SquareRoundedArrowRightFilledIcon } from "@bwp-web/assets";
+import { LandingFormField, LandingFormPanel } from "@bwp-web/components";
+import { Box, CircularProgress, IconButton, InputAdornment, Link as MuiLink, Stack } from "@mui/material";
 import { LoginSettings } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -10,9 +13,6 @@ import { useForm } from "react-hook-form";
 import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
 import { BackButton } from "./back-button";
-import { Button, ButtonVariants } from "./button";
-import { TextInput } from "./input";
-import { Spinner } from "./spinner";
 import { Translated } from "./translated";
 
 type Inputs = {
@@ -26,7 +26,6 @@ type Props = {
   organization?: string;
   defaultOrganization?: string;
   suffix?: string;
-  hideSuffix?: boolean;
   submit: boolean;
   allowRegister: boolean;
 };
@@ -37,7 +36,6 @@ export function UsernameForm({
   organization,
   defaultOrganization,
   suffix,
-  hideSuffix,
   loginSettings,
   submit,
   allowRegister,
@@ -97,26 +95,66 @@ export function UsernameForm({
     inputLabel = t("labels.usernameOrEmail");
   }
 
+  const { ref: loginNameRef, ...loginNameField } = register("loginName", {
+    required: t("required.loginName"),
+  });
+
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className="">
-          <TextInput
-            type="text"
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            autoFocus
-            {...register("loginName", { required: t("required.loginName") })}
-            label={inputLabel}
-            data-testid="username-text-input"
-            suffix={hideSuffix ? undefined : suffix}
-          />
+      <LandingFormPanel onSubmit={handleSubmit((e) => submitLoginName(e, organization))} sx={{ borderRadius: 2 }}>
+        <LandingFormField
+          label={inputLabel}
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus
+          {...loginNameField}
+          inputRef={loginNameRef}
+          // The theme turns adornment icons text.primary while a field is
+          // focused, which blacks out the blue submit arrow for the whole flow.
+          // `inherit` hands the colour back to the IconButton.
+          sx={{ "& .MuiOutlinedInput-root.Mui-focused .MuiInputAdornment-root svg": { color: "inherit" } }}
+          slotProps={{
+            htmlInput: { "data-testid": "username-text-input" },
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    type="submit"
+                    variant="none"
+                    size="medium"
+                    aria-label={t("submit")}
+                    data-testid="submit-button"
+                    disabled={loading || !formState.isValid}
+                    sx={{ color: "info.main", "&.Mui-disabled": { color: "action.disabled" } }}
+                  >
+                    {loading ? <CircularProgress size={20} /> : <SquareRoundedArrowRightFilledIcon />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        {error && (
+          <Box data-testid="error">
+            <Alert>{error}</Alert>
+          </Box>
+        )}
+
+        <Stack direction="row" alignItems="center" gap={1}>
+          <BackButton data-testid="back-button" />
+          <Box flexGrow={1} />
           {allowRegister && (
-            <button
-              className="hover:text-primary-light-500 dark:hover:text-primary-dark-500 text-sm transition-all"
+            <MuiLink
+              component="button"
+              type="button"
+              variant="body2"
+              data-testid="register-button"
+              disabled={loading}
               onClick={() => {
                 const registerParams = new URLSearchParams();
                 if (organization) {
@@ -125,39 +163,14 @@ export function UsernameForm({
                 if (requestId) {
                   registerParams.append("requestId", requestId);
                 }
-
                 router.push("/register?" + registerParams);
               }}
-              type="button"
-              disabled={loading}
-              data-testid="register-button"
             >
               <Translated i18nKey="register" namespace="loginname" />
-            </button>
+            </MuiLink>
           )}
-        </div>
-
-        {error && (
-          <div className="py-4" data-testid="error">
-            <Alert>{error}</Alert>
-          </div>
-        )}
-        <div className="mt-4 flex w-full flex-row items-center">
-          <BackButton data-testid="back-button" />
-          <span className="flex-grow"></span>
-          <Button
-            data-testid="submit-button"
-            type="submit"
-            className="self-end"
-            variant={ButtonVariants.Primary}
-            disabled={loading || !formState.isValid}
-            onClick={handleSubmit((e) => submitLoginName(e, organization))}
-          >
-            {loading && <Spinner className="mr-2 h-5 w-5" />}
-            <Translated i18nKey="submit" namespace="loginname" />
-          </Button>
-        </div>
-      </form>
+        </Stack>
+      </LandingFormPanel>
     </>
   );
 }

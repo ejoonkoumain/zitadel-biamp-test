@@ -29,7 +29,13 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     // Add React 19 compatibility optimizations
-    optimizePackageImports: ["@radix-ui/react-tooltip", "@heroicons/react"],
+    optimizePackageImports: [
+      "@radix-ui/react-tooltip",
+      "@heroicons/react",
+      "@bwp-web/assets",
+      "@bwp-web/components",
+      "@mui/material",
+    ],
     serverActions: {
       ...(process.env.SERVER_ACTION_ALLOWED_ORIGINS
         ? { allowedOrigins: process.env.SERVER_ACTION_ALLOWED_ORIGINS.split(",").map((o) => o.trim()) }

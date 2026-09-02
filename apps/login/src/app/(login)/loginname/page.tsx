@@ -1,10 +1,11 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
 import { SignInWithIdp } from "@/components/sign-in-with-idp";
 import { Translated } from "@/components/translated";
 import { UsernameForm } from "@/components/username-form";
 import { getServiceConfig } from "@/lib/service-url";
-import { getActiveIdentityProviders, getBrandingSettings, getDefaultOrg, getLoginSettings } from "@/lib/zitadel";
+import { getActiveIdentityProviders, getDefaultOrg, getLoginSettings } from "@/lib/zitadel";
 import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
+import { Box } from "@mui/material";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -43,46 +44,35 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     return resp.identityProviders;
   });
 
-  const branding = await getBrandingSettings({ serviceConfig, organization: organization ?? defaultOrganization });
-
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="loginname" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="description" namespace="loginname" />
-        </p>
-      </div>
+    <LandingShell
+      title={<Translated i18nKey="title" namespace="loginname" />}
+      subtitle={<Translated i18nKey="description" namespace="loginname" />}
+    >
+      {loginSettings?.allowLocalAuthentication && (
+        <UsernameForm
+          loginName={loginName}
+          requestId={requestId}
+          organization={organization} // stick to "organization" as we still want to do user discovery based on the searchParams not the default organization, later the organization is determined by the found user
+          defaultOrganization={defaultOrganization}
+          loginSettings={loginSettings}
+          suffix={orgDomain}
+          submit={submit}
+          allowRegister={!!loginSettings?.allowRegister}
+        />
+      )}
 
-      <div className="w-full">
-        {loginSettings?.allowLocalAuthentication && (
-          <UsernameForm
-            loginName={loginName}
+      {loginSettings?.allowExternalIdp && !!identityProviders?.length && (
+        <Box width="100%" maxWidth={441} pt={3} pb={2}>
+          <SignInWithIdp
+            identityProviders={identityProviders}
             requestId={requestId}
-            organization={organization} // stick to "organization" as we still want to do user discovery based on the searchParams not the default organization, later the organization is determined by the found user
-            defaultOrganization={defaultOrganization}
-            loginSettings={loginSettings}
-            suffix={orgDomain}
-            hideSuffix={branding?.hideLoginNameSuffix}
-            submit={submit}
-            allowRegister={!!loginSettings?.allowRegister}
-          ></UsernameForm>
-        )}
-
-        {loginSettings?.allowExternalIdp && !!identityProviders?.length && (
-          <div className="w-full pt-6 pb-4">
-            <SignInWithIdp
-              identityProviders={identityProviders}
-              requestId={requestId}
-              organization={organization}
-              postErrorRedirectUrl="/loginname"
-              showLabel={loginSettings?.allowLocalAuthentication}
-            ></SignInWithIdp>
-          </div>
-        )}
-      </div>
-    </DynamicTheme>
+            organization={organization}
+            postErrorRedirectUrl="/loginname"
+            showLabel={loginSettings?.allowLocalAuthentication}
+          />
+        </Box>
+      )}
+    </LandingShell>
   );
 }

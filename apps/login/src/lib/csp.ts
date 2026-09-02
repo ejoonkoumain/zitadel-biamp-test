@@ -3,8 +3,12 @@ const BASE_DIRECTIVES: Record<string, string[]> = {
   "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
   "connect-src": ["'self'"],
   "style-src": ["'self'", "'unsafe-inline'"],
-  "font-src": ["'self'"],
-  "img-src": ["'self'"],
+  // @bwp-web/assets ships fonts and images as base64 data: URIs, and
+  // biampTheme injects the @font-face rules through MuiCssBaseline. Without
+  // this the Biamp theme renders with no background, no logo and fallback
+  // fonts. Deliberately NOT added to script-src or object-src.
+  "font-src": ["'self'", "data:"],
+  "img-src": ["'self'", "data:"],
   "frame-ancestors": ["'none'"],
   "object-src": ["'none'"],
 };

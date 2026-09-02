@@ -9,8 +9,8 @@ describe("buildCSP", () => {
     expect(csp).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
     expect(csp).toContain("connect-src 'self'");
     expect(csp).toContain("style-src 'self' 'unsafe-inline'");
-    expect(csp).toContain("font-src 'self'");
-    expect(csp).toContain("img-src 'self'");
+    expect(csp).toContain("font-src 'self' data:");
+    expect(csp).toContain("img-src 'self' data:");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
   });
@@ -18,8 +18,8 @@ describe("buildCSP", () => {
   test("adds serviceUrl to img-src and font-src", () => {
     const csp = buildCSP({ serviceUrl: "https://my-instance.zitadel.cloud" });
 
-    expect(csp).toContain("img-src 'self' https://my-instance.zitadel.cloud");
-    expect(csp).toContain("font-src 'self' https://my-instance.zitadel.cloud");
+    expect(csp).toContain("img-src 'self' data: https://my-instance.zitadel.cloud");
+    expect(csp).toContain("font-src 'self' data: https://my-instance.zitadel.cloud");
   });
 
   test("keeps frame-ancestors as 'none' when iframeOrigins is empty", () => {
@@ -43,8 +43,8 @@ describe("buildCSP", () => {
       iframeOrigins: ["https://portal.mycompany.com"],
     });
 
-    expect(csp).toContain("img-src 'self' https://zitadel.mycompany.com");
-    expect(csp).toContain("font-src 'self' https://zitadel.mycompany.com");
+    expect(csp).toContain("img-src 'self' data: https://zitadel.mycompany.com");
+    expect(csp).toContain("font-src 'self' data: https://zitadel.mycompany.com");
     expect(csp).toContain("frame-ancestors https://portal.mycompany.com");
     expect(csp).not.toContain("frame-ancestors 'none'");
   });
@@ -60,5 +60,22 @@ describe("buildCSP", () => {
     expect(csp).toContain("connect-src 'self'");
     expect(csp).toContain("style-src 'self' 'unsafe-inline'");
     expect(csp).toContain("object-src 'none'");
+  });
+
+  test("allows data: URIs for fonts and images, which @bwp-web/assets ships", () => {
+    const csp = buildCSP();
+
+    expect(csp).toContain("font-src 'self' data:");
+    expect(csp).toContain("img-src 'self' data:");
+  });
+
+  test("does NOT allow data: in script-src or object-src", () => {
+    const csp = buildCSP({ serviceUrl: "https://my-instance.zitadel.cloud" });
+
+    const scriptSrc = csp.split("; ").find((d) => d.startsWith("script-src"));
+    const objectSrc = csp.split("; ").find((d) => d.startsWith("object-src"));
+
+    expect(scriptSrc).not.toContain("data:");
+    expect(objectSrc).not.toContain("data:");
   });
 });
