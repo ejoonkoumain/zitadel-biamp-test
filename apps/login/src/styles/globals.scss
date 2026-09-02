@@ -2,6 +2,31 @@
 @use "tailwindcss";
 @config "../../tailwind.config.mjs";
 
+// Stops a hairline border being drawn around every MUI component.
+//
+// Two rules collide here. @bwp-web/styles injects, via MuiCssBaseline,
+// `[class*="Mui"]:not(...) { border-width: 0.6px !important; }` — intended to
+// make borders hairline-thin on components that ask for one. Tailwind's
+// preflight then sets `border-style: solid` on EVERY element. In workplace-web
+// (Vite, no Tailwind) the bwp rule is inert, because border-style defaults to
+// `none` and a none-style border has zero used width. Here the preflight
+// supplies the missing style, so all 0.6px widths become visible boxes.
+//
+// `:where()` carries zero specificity, which is exactly what this needs:
+//   - it ties with the preflight's `*, ::before, ::after` and, being later in
+//     source order, wins — so MUI elements lose the unwanted solid style;
+//   - it loses to MUI's own component classes, which declare their own
+//     `borderStyle: 'solid'` (see NotchedOutline and outlined Button), so
+//     genuinely-intended borders on inputs and buttons still render;
+//   - it never matches non-MUI elements, so Tailwind's `border` utilities on
+//     the not-yet-migrated components are untouched.
+//
+// Temporary. This whole file is deleted in Task 19, which removes the preflight
+// and fixes the collision at its root.
+:where([class*="Mui"]) {
+  border-style: none;
+}
+
 @layer base {
   h1,
   .ztdl-h1 {

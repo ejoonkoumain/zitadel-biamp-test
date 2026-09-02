@@ -4,7 +4,7 @@ import { handleServerActionResponse } from "@/lib/client-utils";
 import { sendLoginname } from "@/lib/server/loginname";
 import { SquareRoundedArrowRightFilledIcon } from "@bwp-web/assets";
 import { LandingFormField, LandingFormPanel } from "@bwp-web/components";
-import { Box, CircularProgress, IconButton, InputAdornment, Link as MuiLink, Stack } from "@mui/material";
+import { Box, CircularProgress, IconButton, InputAdornment } from "@mui/material";
 import { LoginSettings } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -12,8 +12,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
-import { BackButton } from "./back-button";
-import { Translated } from "./translated";
 
 type Inputs = {
   loginName: string;
@@ -27,7 +25,6 @@ type Props = {
   defaultOrganization?: string;
   suffix?: string;
   submit: boolean;
-  allowRegister: boolean;
 };
 
 export function UsernameForm({
@@ -38,7 +35,6 @@ export function UsernameForm({
   suffix,
   loginSettings,
   submit,
-  allowRegister,
 }: Props) {
   const { register, handleSubmit, formState } = useForm<Inputs>({
     mode: "onChange",
@@ -86,7 +82,11 @@ export function UsernameForm({
     }
   }, [submit, loginName, organization, submitLoginName]);
 
-  let inputLabel = t("labels.loginname");
+  // Default label matches the Storybook design copy ("Email"). The three branches
+  // below are left as "username"-flavored labels because they cover configurations
+  // where the field genuinely accepts a username or phone number, not just an
+  // email address — relabelling those "Email" would misdescribe the field.
+  let inputLabel = t("labels.email");
   if (loginSettings?.disableLoginWithEmail && loginSettings?.disableLoginWithPhone) {
     inputLabel = t("labels.username");
   } else if (loginSettings?.disableLoginWithEmail) {
@@ -105,6 +105,7 @@ export function UsernameForm({
       <LandingFormPanel onSubmit={handleSubmit((e) => submitLoginName(e, organization))} sx={{ borderRadius: 2 }}>
         <LandingFormField
           label={inputLabel}
+          placeholder={t("placeholder")}
           type="text"
           autoComplete="username"
           autoCapitalize="none"
@@ -144,32 +145,6 @@ export function UsernameForm({
             <Alert>{error}</Alert>
           </Box>
         )}
-
-        <Stack direction="row" alignItems="center" gap={1}>
-          <BackButton data-testid="back-button" />
-          <Box flexGrow={1} />
-          {allowRegister && (
-            <MuiLink
-              component="button"
-              type="button"
-              variant="body2"
-              data-testid="register-button"
-              disabled={loading}
-              onClick={() => {
-                const registerParams = new URLSearchParams();
-                if (organization) {
-                  registerParams.append("organization", organization);
-                }
-                if (requestId) {
-                  registerParams.append("requestId", requestId);
-                }
-                router.push("/register?" + registerParams);
-              }}
-            >
-              <Translated i18nKey="register" namespace="loginname" />
-            </MuiLink>
-          )}
-        </Stack>
       </LandingFormPanel>
     </>
   );

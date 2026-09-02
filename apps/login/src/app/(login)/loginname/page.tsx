@@ -46,8 +46,9 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   return (
     <LandingShell
-      title={<Translated i18nKey="title" namespace="loginname" />}
-      subtitle={<Translated i18nKey="description" namespace="loginname" />}
+      title={<Translated i18nKey="heroTitle" namespace="loginname" />}
+      subtitle={<Translated i18nKey="heroSubtitle" namespace="loginname" />}
+      helpText={<Translated i18nKey="helpText" namespace="loginname" />}
     >
       {loginSettings?.allowLocalAuthentication && (
         <UsernameForm
@@ -58,7 +59,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
           loginSettings={loginSettings}
           suffix={orgDomain}
           submit={submit}
-          allowRegister={!!loginSettings?.allowRegister}
         />
       )}
 

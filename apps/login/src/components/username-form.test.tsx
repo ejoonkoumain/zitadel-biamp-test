@@ -17,7 +17,10 @@ vi.mock("next/navigation", () => ({
 // renderWithTheme (theme-only) does not supply. Every other component test in
 // this codebase mocks next-intl the same way (see change-password-form.test.tsx).
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  // Every key maps to itself, EXCEPT "placeholder": the design-copy test below
+  // asserts the actual placeholder text ("you@acme.com" per locales/en.json),
+  // so it needs a real value rather than the literal key back.
+  useTranslations: () => (key: string) => (key === "placeholder" ? "you@acme.com" : key),
 }));
 
 vi.mock("@/lib/server/loginname", () => ({
@@ -29,7 +32,6 @@ const baseProps = {
   requestId: undefined,
   loginSettings: undefined,
   submit: false,
-  allowRegister: true,
 };
 
 describe("UsernameForm", () => {
@@ -41,32 +43,20 @@ describe("UsernameForm", () => {
     expect(getByTestId("username-text-input").tagName).toBe("INPUT");
   });
 
-  it("renders the submit button with its testid, and a back button", () => {
-    const { getByTestId, getByRole } = renderWithTheme(<UsernameForm {...baseProps} />);
+  it("renders the submit button with its testid, and no back or register control", () => {
+    const { getByTestId, queryByRole, queryByTestId } = renderWithTheme(<UsernameForm {...baseProps} />);
 
     expect(getByTestId("submit-button")).toBeInTheDocument();
-    // NOTE: BackButton (./back-button.tsx) takes no props and does not yet
-    // forward `data-testid` to its rendered element — that only happens once
-    // it is rebuilt on an MUI primitive in a later task. The call site here
-    // still passes data-testid="back-button" (preserving the attribute so
-    // wiring lights up automatically once BackButton forwards it), but until
-    // then the testid does not land in the DOM. This is a pre-existing gap
-    // outside this task's scope, and it is not exercised by the acceptance
-    // suite (no `getByTestId("back-button")` anywhere under
-    // apps/login/acceptance/), so it is verified here via role instead.
-    expect(getByRole("button", { name: "back" })).toBeInTheDocument();
-  });
-
-  it("renders the register button when registration is allowed", () => {
-    const { getByTestId } = renderWithTheme(<UsernameForm {...baseProps} />);
-
-    expect(getByTestId("register-button")).toBeInTheDocument();
-  });
-
-  it("hides the register button when registration is not allowed", () => {
-    const { queryByTestId } = renderWithTheme(<UsernameForm {...baseProps} allowRegister={false} />);
-
+    // The design (Task 6B) drops both the "Back" and "Register new user"
+    // controls from this page; /register stays reachable by direct URL only.
+    expect(queryByRole("button", { name: "back" })).not.toBeInTheDocument();
     expect(queryByTestId("register-button")).not.toBeInTheDocument();
+  });
+
+  it("shows the design's email placeholder", () => {
+    const { getByPlaceholderText } = renderWithTheme(<UsernameForm {...baseProps} />);
+
+    expect(getByPlaceholderText("you@acme.com")).toBeInTheDocument();
   });
 
   it("wires react-hook-form to the real input, so typing enables the submit button", async () => {

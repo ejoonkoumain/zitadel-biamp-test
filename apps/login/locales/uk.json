@@ -27,7 +27,12 @@
     "description": "Введіть свої дані для входу.",
     "register": "Зареєструвати нового користувача",
     "submit": "Продовжити",
+    "heroTitle": "Welcome to Workplace",
+    "heroSubtitle": "Manage every space effortlessly with intuitive tools for seamless operations and extraordinary experiences.",
+    "helpText": "Trouble signing in? Contact your organization's administrator.",
+    "placeholder": "you@acme.com",
     "labels": {
+      "email": "Email",
       "loginname": "Ім'я для входу",
       "username": "Ім'я користувача",
       "usernameOrPhoneNumber": "Ім'я користувача або номер телефону",

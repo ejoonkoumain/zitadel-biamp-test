@@ -27,7 +27,12 @@
     "description": "Voer jouw inloggegevens in.",
     "register": "Nieuwe gebruiker registreren",
     "submit": "Verder",
+    "heroTitle": "Welcome to Workplace",
+    "heroSubtitle": "Manage every space effortlessly with intuitive tools for seamless operations and extraordinary experiences.",
+    "helpText": "Trouble signing in? Contact your organization's administrator.",
+    "placeholder": "you@acme.com",
     "labels": {
+      "email": "Email",
       "loginname": "Loginnaam",
       "username": "Gebruikersnaam",
       "usernameOrPhoneNumber": "Telefoonnummer of gebruikersnaam",

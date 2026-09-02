@@ -27,7 +27,12 @@
     "description": "ログイン情報を入力してください。",
     "register": "新規ユーザー登録",
     "submit": "続行",
+    "heroTitle": "Welcome to Workplace",
+    "heroSubtitle": "Manage every space effortlessly with intuitive tools for seamless operations and extraordinary experiences.",
+    "helpText": "Trouble signing in? Contact your organization's administrator.",
+    "placeholder": "you@acme.com",
     "labels": {
+      "email": "Email",
       "loginname": "ログイン名",
       "username": "ユーザー名",
       "usernameOrPhoneNumber": "ユーザー名または電話番号",

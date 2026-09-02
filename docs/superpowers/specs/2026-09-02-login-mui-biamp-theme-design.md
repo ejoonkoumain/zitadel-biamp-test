@@ -156,6 +156,38 @@ without touching their logic.
 A route-by-route sweep then removes the remaining layout `className`s from the
 ~75 feature components. 100 of 133 `.tsx` files currently use `className=`.
 
+### ZITADEL's second theming layer
+
+Beyond the branding plumbing, `apps/login` carries its own configurable theme
+system driven by five `NEXT_PUBLIC_THEME_*` environment variables
+(`_ROUNDNESS`, `_LAYOUT`, `_APPEARANCE`, `_SPACING`, `_BACKGROUND_IMAGE`). It
+emits Tailwind class strings through `getThemeConfig()`,
+`getComponentRoundness()`, `APPEARANCE_STYLES` and `SPACING_STYLES`:
+
+- `src/lib/theme.ts` (154 lines) — the config and class-string tables
+- `src/lib/themeUtils.tsx` (49 lines) — the `ThemeableProps` type
+- `src/lib/theme-hooks.ts` (62 lines) — `useResponsiveLayout`, used by `DynamicTheme`
+- `src/lib/theme.test.ts` (459 lines) — its test suite
+
+This is ZITADEL-provided theming, so per the decisions above it is deleted
+entirely and `biampTheme` replaces it. Eleven files import from it and must
+drop those imports as they are migrated:
+
+```
+components/avatar.tsx              components/idps/base-button.tsx
+components/background-wrapper.tsx  components/input.tsx
+components/button.tsx              components/language-switcher.tsx
+components/card.tsx                components/skeleton-card.tsx
+components/dynamic-theme.tsx       components/theme-switch.tsx
+                                   components/user-avatar.tsx
+```
+
+None of the five env vars is set in `apps/login/.env`, so the layer currently
+runs on its defaults (`roundness: mid`, `layout: top-to-bottom`,
+`appearance: material`, `spacing: regular`). Removing it therefore changes no
+configured behaviour. `apps/login/.env.theme.example`, `THEME_ARCHITECTURE.md`
+and `THEME_CUSTOMIZATION.md` document this system and are deleted with it.
+
 ### Deletions
 
 Removed once the sweep is complete:
@@ -167,6 +199,9 @@ Removed once the sweep is complete:
 - `src/components/dynamic-theme.tsx`
 - `src/components/branding-context.tsx`
 - `src/components/background-wrapper.tsx`
+- `src/lib/theme.ts`, `src/lib/themeUtils.tsx`, `src/lib/theme-hooks.ts`,
+  `src/lib/theme.test.ts`
+- `.env.theme.example`, `THEME_ARCHITECTURE.md`, `THEME_CUSTOMIZATION.md`
 - from `apps/login/package.json`: `tailwindcss` (^4.3.0),
   `@tailwindcss/postcss`, `@tailwindcss/forms`, `postcss`,
   `prettier-plugin-tailwindcss`, `sass`
@@ -196,8 +231,24 @@ Accepted.
 `getByTestId` 46 times against `getByRole` 3 times, so preserving testids
 should carry that suite through the restyle unchanged.
 
-Of the 19 unit test files, the 5 that assert on CSS classes are rewritten; the
-remaining 14 use semantic queries and should pass untouched.
+The suite is **59 test files / 894 tests, all passing** as measured on
+2026-09-02. Of the 19 files under `src/components/`, the 5 that assert on CSS
+classes are rewritten — `button.test.tsx`, `input.test.tsx`, `card.test.tsx`,
+`avatar.test.tsx` and `password-complexity.test.tsx`. The rest of the suite
+uses semantic queries and should pass untouched.
+
+`tsc --noEmit` reports 50 errors on a clean checkout, all in test files and all
+unrelated to theming. That is the baseline; the plan enumerates the 11 files.
+`vitest` passes regardless because it does not typecheck, and `nx build`
+succeeds too.
+
+`src/lib/theme.test.ts` (459 lines) is deleted outright with the theme layer it
+covers, not rewritten.
+
+Components rendered in tests will need an MUI `ThemeProvider` in scope. A
+shared helper, `src/test-utils/render-with-theme.tsx`, wraps
+`@testing-library/react`'s `render` with `MuiThemeProvider theme={biampTheme()}`
+so individual tests do not each rebuild the provider stack.
 
 Verification:
 
@@ -212,18 +263,22 @@ callback.
 
 ## Risks
 
-### 1. `@mui/material-nextjs@7` does not declare Next 16 support
+### 1. ~~`@mui/material-nextjs@7` does not declare Next 16 support~~ — RESOLVED
 
-Its peer range is `next: ^13 || ^14 || ^15`; `apps/login` runs Next 16.2.11.
-The v9 line supports Next 16 but pairs with MUI 9.
+**Retired on 2026-09-02 during Task 1.** This risk rested on the peer range of
+`@mui/material-nextjs@7.0.0`/`7.0.2` (`next: ^13 || ^14 || ^15`). The current
+release in the v7 line, **7.3.10**, declares
+`next: ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0` — Next 16 is natively
+supported.
 
-Plan: install the v7 line with a `pnpm.peerDependencyRules` override.
-`AppRouterCacheProvider` is a thin wrapper over `useServerInsertedHTML`, an API
-that is stable in Next 16.
+`pnpm install` emits no unmet-peer warning for it, so the planned
+`pnpm.peerDependencyRules` override was dropped and the root `package.json` is
+left unmodified. Pin `@mui/material-nextjs@^7.3.10` so the resolved version is
+always one that declares Next 16.
 
-**This is spiked first.** If it misbehaves, the fallback is a hand-rolled
-emotion cache provider (~30 lines using `useServerInsertedHTML` directly),
-which drops the dependency entirely.
+The hand-rolled `useServerInsertedHTML` provider remains available as a
+fallback if `AppRouterCacheProvider` misbehaves at runtime, but there is no
+longer a declared-compatibility reason to expect that.
 
 ### 2. Upstream rebase cost
 

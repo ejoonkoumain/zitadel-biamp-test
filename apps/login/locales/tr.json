@@ -27,7 +27,12 @@
     "description": "Giriş bilgilerinizi girin.",
     "register": "Yeni kullanıcı kaydet",
     "submit": "Devam",
+    "heroTitle": "Welcome to Workplace",
+    "heroSubtitle": "Manage every space effortlessly with intuitive tools for seamless operations and extraordinary experiences.",
+    "helpText": "Trouble signing in? Contact your organization's administrator.",
+    "placeholder": "you@acme.com",
     "labels": {
+      "email": "Email",
       "loginname": "Kullanıcı adı",
       "username": "Kullanıcı adı",
       "usernameOrPhoneNumber": "Kullanıcı adı veya telefon numarası",

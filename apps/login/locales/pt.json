@@ -27,7 +27,12 @@
     "description": "Insira seus dados de acesso.",
     "register": "Cadastrar novo usuário",
     "submit": "Continuar",
+    "heroTitle": "Welcome to Workplace",
+    "heroSubtitle": "Manage every space effortlessly with intuitive tools for seamless operations and extraordinary experiences.",
+    "helpText": "Trouble signing in? Contact your organization's administrator.",
+    "placeholder": "you@acme.com",
     "labels": {
+      "email": "Email",
       "loginname": "Nome de usuário",
       "username": "Usuário",
       "usernameOrPhoneNumber": "Usuário ou número de telefone",
