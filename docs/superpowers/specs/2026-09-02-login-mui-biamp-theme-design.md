@@ -137,19 +137,28 @@ blacks out the blue submit arrow for the whole flow.
 ### Primitive swap
 
 Rewrite these 8 files' internals to MUI, keeping file paths, exported prop
-signatures and every `data-testid` identical. This restyles 122 call sites
+signatures and every `data-testid` identical. This restyles ~115 call sites
 without touching their logic.
 
-| File | Becomes | Call sites |
+Counts **recounted on 2026-09-02 excluding each component's own test file**. An
+earlier draft inflated every figure by one, because the original `grep -l`
+counted the test file as a call site. The columns also record what each
+component actually became, which diverged from the first guess in three cases.
+
+| File | Became | Real call sites |
 | --- | --- | --- |
-| `alert.tsx` | MUI `Alert` | 42 |
-| `button.tsx` | MUI `Button`, mapping `ButtonVariants` | 25 |
-| `back-button.tsx` | MUI `Button` + icon | 18 |
-| `spinner.tsx` | MUI `CircularProgress` | 17 |
-| `input.tsx` | `LandingFormField` / `TextField` | 13 |
-| `avatar.tsx` | `UserInitialsIcon` | 5 |
-| `card.tsx` | `LandingFormPanel` | 2 |
-| `checkbox.tsx` | `LandingFormCheckbox` | 1 |
+| `alert.tsx` | MUI `Alert` (`standard` only — see Risks) | 42 |
+| `button.tsx` | MUI `Button`, mapping `ButtonVariants` | 23 |
+| `back-button.tsx` | **no change needed** — declares no props | 17 |
+| `spinner.tsx` | MUI `CircularProgress` | 16 |
+| `input.tsx` | MUI `TextField` (not `LandingFormField`) | 11 |
+| `avatar.tsx` | MUI `Avatar` | 4 |
+| `card.tsx` | MUI `Paper` (not `LandingFormPanel`) | 1 |
+| `checkbox.tsx` | MUI `Checkbox` + `FormControlLabel` | 1 |
+
+`card.tsx`'s single consumer is `dynamic-theme.tsx`, which Task 18 deletes
+outright — so `Card` may end up with no consumers at all. Task 18 should check
+whether `card.tsx` itself can then go too.
 
 `translated.tsx` (66 importers) is untouched — it is pure i18n with no styling.
 

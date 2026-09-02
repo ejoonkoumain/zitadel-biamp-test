@@ -1,8 +1,7 @@
 "use client";
 
-import { ColorShade, getColorHash } from "@/helpers/colors";
-import { getComponentRoundness } from "@/lib/theme";
-import { useTheme } from "next-themes";
+import { getColorHash } from "@/helpers/colors";
+import MuiAvatar from "@mui/material/Avatar";
 
 interface AvatarProps {
   name: string | null | undefined;
@@ -30,54 +29,42 @@ export function getInitials(name: string, loginName: string) {
   return split[0].charAt(0) + (split[1] ? split[1].charAt(0) : "");
 }
 
-// Helper function to get avatar roundness from theme
-function getAvatarRoundness(): string {
-  return getComponentRoundness("avatar");
-}
+const SIZE_PX: Record<NonNullable<AvatarProps["size"]>, number> = {
+  small: 32,
+  base: 38,
+  large: 80,
+};
 
 export function Avatar({ size = "base", name, loginName, imageUrl, shadow }: AvatarProps) {
-  const { resolvedTheme } = useTheme();
   const credentials = getInitials(name ?? loginName, loginName);
-  const avatarRoundness = getAvatarRoundness();
-
-  const color: ColorShade = getColorHash(loginName);
-
-  const avatarStyleDark = {
-    backgroundColor: color[900],
-    color: color[200],
-  };
-
-  const avatarStyleLight = {
-    backgroundColor: color[200],
-    color: color[900],
-  };
+  const dimension = SIZE_PX[size];
+  // Per-user colour so multiple accounts with the same initials (e.g. two
+  // "JD"s in the account picker) remain visually distinguishable. Only
+  // matters for the initials case — an image needs no background colour.
+  const color = getColorHash(loginName);
 
   return (
-    <div
-      className={`dark:group-focus:ring-offset-blue dark:text-blue bg-primary-light-500 text-primary-light-contrast-500 hover:bg-primary-light-400 group-focus:ring-primary-light-200 dark:bg-primary-dark-300 dark:text-primary-dark-contrast-300 hover:dark:bg-primary-dark-500 dark:group-focus:ring-primary-dark-400 pointer-events-none flex h-full w-full flex-shrink-0 cursor-default items-center justify-center transition-colors duration-200 group-focus:ring-2 group-focus:outline-none ${avatarRoundness} ${
-        shadow ? "shadow" : ""
-      } ${
-        size === "large"
-          ? "h-20 w-20 font-normal"
-          : size === "base"
-            ? "h-[38px] w-[38px] font-bold"
-            : size === "small"
-              ? "!h-[32px] !w-[32px] text-[13px] font-bold"
-              : "h-12 w-12"
-      }`}
-      style={resolvedTheme === "light" ? avatarStyleLight : avatarStyleDark}
+    <MuiAvatar
+      src={imageUrl}
+      alt="avatar"
+      sx={(theme) => ({
+        width: dimension,
+        height: dimension,
+        fontSize: size === "large" ? "1.25rem" : "0.8125rem",
+        fontWeight: size === "large" ? 400 : 700,
+        textTransform: "uppercase",
+        boxShadow: shadow ? 1 : "none",
+        ...(!imageUrl && {
+          bgcolor: color[200],
+          color: color[900],
+          ...theme.applyStyles("dark", {
+            bgcolor: color[900],
+            color: color[200],
+          }),
+        }),
+      })}
     >
-      {imageUrl ? (
-        <img
-          height={48}
-          width={48}
-          alt="avatar"
-          className={`border-divider-light dark:border-divider-dark h-full w-full border ${avatarRoundness}`}
-          src={imageUrl}
-        />
-      ) : (
-        <span className={`uppercase ${size === "large" ? "text-xl" : "text-13px"}`}>{credentials}</span>
-      )}
-    </div>
+      {credentials}
+    </MuiAvatar>
   );
 }

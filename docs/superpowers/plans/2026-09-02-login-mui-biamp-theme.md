@@ -12,6 +12,48 @@
 
 ---
 
+## PROGRESS — updated 2026-09-02
+
+| Task | State |
+| --- | --- |
+| 1 Install dependencies | ✅ |
+| 2 Spike: biampTheme + AppRouterCacheProvider on Next 16 | ✅ Risk 1 retired |
+| 3 Provider stack in root layout | ✅ 11 `@font-face` rules verified in SSR HTML |
+| 4 `LandingShell` | ✅ |
+| 5 `UsernameForm` on `LandingFormPanel` | ✅ |
+| 6 Compose `/loginname` | ✅ |
+| 6A CSP `data:` for fonts and images | ✅ unblocked the whole theme |
+| 6B Match Storybook copy, strip Back/Register | ✅ |
+| 7 `alert.tsx` | ✅ |
+| 8 `button.tsx` | ✅ |
+| 9 `input.tsx` | ✅ browser-proved the testid contract |
+| 10 `card.tsx` | ✅ |
+| 11 `spinner.tsx` | ✅ |
+| 12 `avatar.tsx` | ✅ |
+| 13 `checkbox.tsx` + verify `back-button.tsx` | ✅ |
+| 14–17 Phase 4 route sweep | ⬜ next |
+| 18–19 Phase 5 teardown | ⬜ |
+
+**Verified at end of Phase 3:** all 7 rewritten primitives import `@mui/material`
+and contain zero `lib/theme` and zero `clsx` references; `back-button.tsx`
+needed no change. **883 tests passing / 63 files**, `tsc` at its 50-error
+baseline in the same 11 files, `nx build` clean.
+
+`lib/theme` importers are down from 11 to **7**: `background-wrapper.tsx`,
+`dynamic-theme.tsx`, `idps/base-button.tsx`, `language-switcher.tsx`,
+`skeleton-card.tsx`, `theme-switch.tsx`, `user-avatar.tsx`. All seven are
+handled in Phase 4, which is what makes the Task 18 deletion possible.
+
+**On the test count:** it started at 894 and now reads 883. That net −11 is not
+lost coverage — roughly 60 obsolete tests were removed (Tailwind class-string
+assertions, `roundness` behaviour that no longer exists, and a number of
+genuinely vacuous ones such as `expect(container.firstChild).toBeTruthy()`) and
+replaced with roughly 49 behavioural ones. Where a primitive's rewrite *did*
+shed live coverage, it was restored deliberately: `className` forwarding on
+`button` and `spinner`, and five behaviours on `input` including the
+`autoComplete` privacy default. Each restored test was proved to fail with the
+bug reintroduced.
+
 ## Ground rules — read before any task
 
 **GIT: Do not run any git command that mutates state.** No `add`, `commit`,
@@ -118,6 +160,25 @@ Two approaches that do **not** work, so nobody retries them:
 **Task 19 must verify the boxes are still gone after deleting `globals.scss`**,
 i.e. that removing the preflight really does replace what the shim was doing.
 
+**Check `@bwp-web/styles`' MUI augmentations before passing any `variant` or
+`color` prop.** The design system both *adds* and *removes* MUI options, and
+the removals are type errors, not warnings. Found in Task 7, where the plan's
+own `variant="outlined"` on `Alert` pushed `tsc` to 51 errors. Read
+`node_modules/.pnpm/@bwp-web+styles@*/node_modules/@bwp-web/styles/dist/augmentations.d.ts`.
+Known so far:
+
+| Component | Augmentation |
+| --- | --- |
+| `Alert` | `filled: false`, `outlined: false` — **`standard` is the only variant** |
+| `Button` | adds `overlay`; `contained`/`outlined`/`text` still valid |
+| `IconButton` | adds `variant?: 'none' \| 'transparent' \| 'outlined'` |
+| `Typography` | adds `h0`, `sidebar` |
+| `Badge` | adds `rectangle`, `round`, `rectangle-inline`, `round-inline` |
+| `Checkbox` | has `CheckboxPropsColorOverrides` — check before passing `color` |
+
+The palette is augmented too: `palette.text.sidebar` (`#E0E0E0`) and
+`palette.dividers.secondary` exist and are used by the bwp components.
+
 **Dark mode is owned by `next-themes`, and it already works.** Established in
 Task 2: `biampTheme`'s `colorSchemeSelector: 'class'` makes MUI emit its
 colour-scheme CSS under plain `.light` / `.dark` selectors (MUI's
@@ -200,6 +261,29 @@ scope; leaving it is acceptable but say so.
 persists across `it()` blocks within a file, so a query matching a leftover
 element from an earlier test fails with "multiple elements found". This bit
 Task 2.
+
+**Known limitation of `renderWithTheme`: CSS variables do not resolve in
+jsdom.** Found in Task 8. `biampTheme` enables `cssVariables`, and MUI's `sx`
+shorthand for a palette path (e.g. `sx={{ color: "text.primary" }}`) emits a
+bare `var(--mui-palette-text-primary)` with **no literal fallback**. Because
+`renderWithTheme` wraps in a plain `ThemeProvider` and renders no
+`<CssBaseline />`, no `:root` definition for those variables reaches the DOM,
+so `getComputedStyle` hands the `var(...)` reference straight back unresolved.
+
+So **do not assert a computed colour against `theme.palette.X` for anything set
+through `sx`.** It fails even when the code is correct. Two things that do work:
+
+- assert against the variable name, derived from `theme.vars.palette.X` rather
+  than hardcoded, and additionally assert the value is *not* an ancestor's
+  colour (wrap the subject in a `<div style={{ color: "red" }}>` and check it
+  did not inherit red);
+- assert against `theme.palette.X` only where MUI emits a literal fallback —
+  which it does for a component's own `color` prop, as `theme-smoke.test.tsx`
+  relies on.
+
+Whichever you choose, **prove the test fails with the bug present** by
+temporarily reverting the fix. Task 8 did this and it is the only way to know
+the assertion is load-bearing rather than decorative.
 
 **Remedy for every new test file in this plan** — add this, and do not rely on
 giving each render unique text instead:
@@ -1432,8 +1516,11 @@ export enum AlertType {
 }
 
 export function Alert({ children, type = AlertType.ALERT }: Props) {
+  // @bwp-web/styles disables MUI's "filled" and "outlined" Alert variants
+  // (see AlertPropsVariantOverrides in its augmentations) — "standard" is
+  // the only variant this design system supports for Alert.
   return (
-    <MuiAlert severity={type === AlertType.INFO ? "info" : "warning"} variant="outlined" sx={{ width: "100%" }}>
+    <MuiAlert severity={type === AlertType.INFO ? "info" : "warning"} sx={{ width: "100%" }}>
       {children}
     </MuiAlert>
   );
@@ -1441,6 +1528,12 @@ export function Alert({ children, type = AlertType.ALERT }: Props) {
 ```
 
 MUI `Alert` supplies its own severity icon, so the heroicons imports go.
+
+**Do not add `variant="outlined"`** — an earlier draft of this plan did, and it
+is a type error: `@bwp-web/styles` sets `outlined: false` on
+`AlertPropsVariantOverrides`. Leave the variant unset so it defaults to
+`standard`. Verified rendering: an amber warning alert with a triangle icon,
+full-width inside the light form card.
 
 - [ ] **Step 4: Run the test and confirm it passes**
 
@@ -1584,6 +1677,16 @@ function muiColor(variant: ButtonVariants, color: ButtonColors) {
   return "primary" as const;
 }
 
+// MUI's color="inherit" is a STATIC rule — `color: inherit; borderColor:
+// currentColor` — that never consults the palette (verified in
+// @mui/material@7.3.10 Button.js). So Neutral must pin its colour explicitly,
+// or it silently takes whatever text colour an ancestor happens to set.
+// LandingShell sets none (every text node in it carries its own `color` prop),
+// so a Neutral button placed on its dark background would render dark-on-maroon.
+// `text.primary` tracks the colour scheme in step with LandingFormPanel's own
+// background (grey[100] light / grey[700] dark), so it stays readable in both.
+const neutralSx = { color: "text.primary", borderColor: "text.primary" };
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -1604,6 +1707,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       color={muiColor(variant, color)}
       size={size === ButtonSizes.Large ? "large" : "medium"}
       className={className}
+      sx={color === ButtonColors.Neutral ? neutralSx : undefined}
       {...props}
     >
       {children}
@@ -1614,8 +1718,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button";
 ```
 
-`getButtonClasses` and the `ThemeableProps`/`roundness` prop are deleted. If any
-call site passes `roundness`, TypeScript will flag it — remove the prop there.
+`getButtonClasses` and the `ThemeableProps`/`roundness` prop are deleted.
+**Measured blast radius: zero.** All 23 non-test call sites were grepped and
+none passed `roundness` or imported `getButtonClasses`, so no call site needed
+editing. `back-button.tsx` also needs no change — it declares no props and
+delegates to `Button variant={ButtonVariants.Secondary}`.
+
+Keep accepting and forwarding `className`: call sites still pass Tailwind
+classes until the Phase 4 sweep, and there is a test guarding that forwarding
+precisely because Phase 4 is when someone might "tidy it up" and break 20-odd
+components at once.
 
 - [ ] **Step 4: Run the test and confirm it passes**
 
@@ -2238,6 +2350,21 @@ Expected: tests green, no type errors, no `className` hits.
 `@/lib/theme` import. Every provider button in `idps/` builds on it, so do this
 first.
 
+- [ ] **Step 1a: Give `idp-process-handler.tsx`'s spinner an explicit colour**
+
+Carried over from Task 11. `spinner.tsx` now uses MUI's `color="inherit"`,
+which is right for the 16 call sites that sit beside a button's label text — it
+tracks that label's colour across variants and both colour schemes. But
+`idp-process-handler.tsx` is the **one standalone** usage, and it lost the
+explicit brand-coloured arc the old hand-rolled SVG had
+(`fill-primary-light-500 dark:fill-primary-dark-500`); it now inherits ambient
+body text colour. Not a visibility regression, but a look change.
+
+Since this task touches the file anyway, set an explicit colour on that one
+spinner rather than changing the shared default — e.g. wrap it in a `Box` with
+`color="primary.main"`, so `inherit` resolves to the brand colour there while
+every in-button spinner keeps tracking its label.
+
 - [ ] **Step 2: Apply the transformation rules** to the remaining files.
 
 - [ ] **Step 3: Run the checks**
@@ -2262,6 +2389,21 @@ pnpm --filter @zitadel/login exec tsc --noEmit
 - [ ] **Step 2: Move `LanguageSwitcher` and `ThemeSwitch` into the shell.**
 Rewrite both on MUI (`Select` / `IconButton`), dropping their `@/lib/theme`
 imports, and pass them to `LandingShell`'s `actions` prop from each page.
+
+- [ ] **Step 2a: Fix where `privacy-policy-checkboxes.tsx`'s spacing lands**
+
+Carried over from Task 13. `checkbox.tsx` now renders MUI `FormControlLabel`
+wrapping the `Checkbox`, and `className` lands on that **label-row wrapper**
+rather than on the `<input>` as it did before. `privacy-policy-checkboxes.tsx`
+passes `className="mr-4"`, which previously spaced the input from its label
+text and now adds margin to the right of the whole row.
+
+Not a type or behaviour break, and it was correctly left alone in Phase 3
+rather than papered over in the shared primitive. Fix it here, where the
+Tailwind classes are being removed anyway: drop `mr-4` and express the
+intended spacing with MUI (`gap` on the containing `Stack`, or `sx` on the
+control), then eyeball the consent checkboxes to confirm the rhythm looks
+right.
 
 - [ ] **Step 3: Apply the transformation rules** to every remaining component.
 

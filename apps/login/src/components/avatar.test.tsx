@@ -1,30 +1,21 @@
-import { render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import { getColorHash } from "@/helpers/colors";
+import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { Avatar, getInitials } from "./avatar";
 
-// Mock next-themes
-vi.mock("next-themes", () => ({
-  useTheme: () => ({
-    resolvedTheme: "light",
-  }),
-}));
+afterEach(cleanup);
 
-// Mock next/image
-vi.mock("next/image", () => ({
-  default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
-}));
+// getComputedStyle resolves rgb(), not the hex avatar.tsx passes to sx.
+function hexToRgb(hex: string): string {
+  const value = hex.replace("#", "");
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 describe("Avatar Component", () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    process.env = { ...originalEnv };
-  });
-
-  afterEach(() => {
-    process.env = originalEnv;
-  });
-
   describe("getInitials", () => {
     it("should get initials from full name", () => {
       const initials = getInitials("John Doe", "john.doe@example.com");
@@ -63,106 +54,69 @@ describe("Avatar Component", () => {
   });
 
   describe("Component Rendering", () => {
-    it("should render avatar with initials", () => {
-      const { container } = render(<Avatar name="John Doe" loginName="john@example.com" />);
-      expect(container.querySelector(".avatar, [class*='avatar'], div")).toBeTruthy();
+    it("renders the initials when no image is given", () => {
+      const { getByText } = renderWithTheme(<Avatar name="John Doe" loginName="john.doe@example.com" />);
+
+      expect(getByText("JD")).toBeInTheDocument();
     });
 
-    it("should render with different sizes", () => {
-      const sizes: Array<"small" | "base" | "large"> = ["small", "base", "large"];
+    it("renders an img with the given imageUrl instead of initials", () => {
+      const { getByRole, queryByText } = renderWithTheme(
+        <Avatar name="Test User" loginName="test@example.com" imageUrl="https://example.com/avatar.jpg" />,
+      );
 
-      sizes.forEach((size) => {
-        const { container } = render(<Avatar size={size} name="Test User" loginName="test@example.com" />);
-        expect(container.firstChild).toBeTruthy();
+      const img = getByRole("img");
+      expect(img).toHaveAttribute("src", "https://example.com/avatar.jpg");
+      expect(queryByText("TU")).not.toBeInTheDocument();
+    });
+
+    it("renders with each size without crashing", () => {
+      (["small", "base", "large"] as const).forEach((size) => {
+        const { getByText, unmount } = renderWithTheme(
+          <Avatar size={size} name="Test User" loginName="test@example.com" />,
+        );
+        expect(getByText("TU")).toBeInTheDocument();
+        unmount();
       });
     });
 
-    it("should render with shadow prop", () => {
-      const { container } = render(<Avatar name="Test User" loginName="test@example.com" shadow={true} />);
-      expect(container.firstChild).toBeTruthy();
+    it("renders with shadow prop without crashing", () => {
+      const { getByText } = renderWithTheme(<Avatar name="Test User" loginName="test@example.com" shadow={true} />);
+      expect(getByText("TU")).toBeInTheDocument();
     });
 
-    it("should render without shadow prop", () => {
-      const { container } = render(<Avatar name="Test User" loginName="test@example.com" shadow={false} />);
-      expect(container.firstChild).toBeTruthy();
+    it("renders without shadow prop without crashing", () => {
+      const { getByText } = renderWithTheme(<Avatar name="Test User" loginName="test@example.com" shadow={false} />);
+      expect(getByText("TU")).toBeInTheDocument();
     });
 
-    it("should render with image URL", () => {
-      const { container } = render(
-        <Avatar name="Test User" loginName="test@example.com" imageUrl="https://example.com/avatar.jpg" />,
-      );
-      expect(container.firstChild).toBeTruthy();
-    });
-  });
-
-  describe("Theme Integration", () => {
-    it("should apply theme-based roundness", () => {
-      const { container } = render(<Avatar name="Test User" loginName="test@example.com" />);
-      const avatar = container.firstChild as HTMLElement;
-      // Should render with some styling
-      expect(avatar).toBeTruthy();
+    it("falls back to loginName-derived initials when name is null", () => {
+      const { getByText } = renderWithTheme(<Avatar name={null} loginName="jane_smith@example.com" />);
+      expect(getByText("j")).toBeInTheDocument();
     });
 
-    it("should respect theme roundness changes", () => {
-      // Default theme
-      const { container: container1 } = render(<Avatar name="Test User" loginName="test1@example.com" />);
-      const avatar1 = container1.firstChild as HTMLElement;
-
-      // Change theme
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "edgy";
-      const { container: container2 } = render(<Avatar name="Test User" loginName="test2@example.com" />);
-      const avatar2 = container2.firstChild as HTMLElement;
-
-      // Both should render
-      expect(avatar1).toBeTruthy();
-      expect(avatar2).toBeTruthy();
+    it("falls back to loginName-derived initials when name is undefined", () => {
+      const { getByText } = renderWithTheme(<Avatar name={undefined} loginName="testuser@example.com" />);
+      expect(getByText("t")).toBeInTheDocument();
     });
 
-    it("should render with full roundness", () => {
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "full";
-      const { container } = render(<Avatar name="Test User" loginName="test@example.com" />);
-      expect(container.firstChild).toBeTruthy();
-    });
+    it("derives its background colour from loginName's hash, not a fixed value", () => {
+      const loginNameA = "alice@example.com";
+      const loginNameB = "bob@example.com";
+      const colorA = getColorHash(loginNameA);
+      const colorB = getColorHash(loginNameB);
+      // Guard against a coincidence where both names hash into the same
+      // bucket, which would make the assertions below pass vacuously.
+      expect(colorA[200]).not.toBe(colorB[200]);
 
-    it("should render with mid roundness", () => {
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "mid";
-      const { container } = render(<Avatar name="Test User" loginName="test@example.com" />);
-      expect(container.firstChild).toBeTruthy();
-    });
-  });
+      const { container: containerA } = renderWithTheme(<Avatar name="Alice A" loginName={loginNameA} />);
+      const { container: containerB } = renderWithTheme(<Avatar name="Bob B" loginName={loginNameB} />);
+      const avatarA = containerA.firstChild as HTMLElement;
+      const avatarB = containerB.firstChild as HTMLElement;
 
-  describe("Color Generation", () => {
-    it("should generate consistent colors for same loginName", () => {
-      const { container: container1 } = render(<Avatar name="Test" loginName="same@example.com" />);
-      const { container: container2 } = render(<Avatar name="Test" loginName="same@example.com" />);
-
-      expect(container1.firstChild).toBeTruthy();
-      expect(container2.firstChild).toBeTruthy();
-    });
-
-    it("should render for different loginNames", () => {
-      const { container: container1 } = render(<Avatar name="User 1" loginName="user1@example.com" />);
-      const { container: container2 } = render(<Avatar name="User 2" loginName="user2@example.com" />);
-
-      expect(container1.firstChild).toBeTruthy();
-      expect(container2.firstChild).toBeTruthy();
-    });
-  });
-
-  describe("Props Validation", () => {
-    it("should handle null name", () => {
-      const { container } = render(<Avatar name={null} loginName="test@example.com" />);
-      expect(container.firstChild).toBeTruthy();
-    });
-
-    it("should handle undefined name", () => {
-      const { container } = render(<Avatar name={undefined} loginName="test@example.com" />);
-      expect(container.firstChild).toBeTruthy();
-    });
-
-    it("should require loginName", () => {
-      const { container } = render(<Avatar name="Test" loginName="required@example.com" />);
-      expect(container.firstChild).toBeTruthy();
+      expect(getComputedStyle(avatarA).backgroundColor).toBe(hexToRgb(colorA[200]));
+      expect(getComputedStyle(avatarB).backgroundColor).toBe(hexToRgb(colorB[200]));
+      expect(getComputedStyle(avatarA).backgroundColor).not.toBe(getComputedStyle(avatarB).backgroundColor);
     });
   });
 });

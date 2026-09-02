@@ -1,8 +1,7 @@
-import { APPEARANCE_STYLES, getComponentRoundness, getThemeConfig } from "@/lib/theme";
-import { ThemeableProps } from "@/lib/themeUtils";
-import { clsx } from "clsx";
+import { Button as MuiButton } from "@mui/material";
 import { ButtonHTMLAttributes, DetailedHTMLProps, forwardRef } from "react";
 
+// All three enums keep their exact member names — 25 call sites import them.
 export enum ButtonSizes {
   Small = "Small",
   Large = "Large",
@@ -24,73 +23,56 @@ export type ButtonProps = DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonEleme
   size?: ButtonSizes;
   variant?: ButtonVariants;
   color?: ButtonColors;
-} & ThemeableProps;
+};
 
-export const getButtonClasses = (
-  size: ButtonSizes,
-  variant: ButtonVariants,
-  color: ButtonColors,
-  roundnessClasses: string = "rounded-md", // Default fallback
-  appearance: string = "", // Theme appearance (shadows, borders, etc.)
-) =>
-  clsx(
-    {
-      "box-border leading-36px text-14px inline-flex items-center focus:outline-none transition-colors transition-shadow duration-300": true,
-      "disabled:border-none disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none disabled:cursor-not-allowed disabled:dark:bg-gray-700 disabled:dark:text-gray-900":
-        variant === ButtonVariants.Primary,
-      "bg-primary-light-500 dark:bg-primary-dark-500 hover:bg-primary-light-400 hover:dark:bg-primary-dark-400 text-primary-light-contrast-500 dark:text-primary-dark-contrast-500":
-        variant === ButtonVariants.Primary && color !== ButtonColors.Warn,
-      "bg-warn-light-500 dark:bg-warn-dark-500 hover:bg-warn-light-400 hover:dark:bg-warn-dark-400 text-white dark:text-white":
-        variant === ButtonVariants.Primary && color === ButtonColors.Warn,
-      "border border-button-light-border dark:border-button-dark-border text-gray-950 hover:bg-gray-500/20 hover:dark:bg-white/10 focus:bg-gray-500/20 focus:dark:bg-white/10 dark:text-white disabled:text-gray-600 disabled:hover:bg-transparent disabled:dark:hover:bg-transparent disabled:cursor-not-allowed disabled:dark:text-gray-900":
-        variant === ButtonVariants.Secondary,
-      "border border-button-light-border dark:border-button-dark-border text-warn-light-500 dark:text-warn-dark-500 hover:bg-warn-light-500/10 dark:hover:bg-warn-light-500/10 focus:bg-warn-light-500/20 dark:focus:bg-warn-light-500/20":
-        color === ButtonColors.Warn && variant !== ButtonVariants.Primary,
-      "px-16 py-2": size === ButtonSizes.Large,
-      "px-4 h-[36px]": size === ButtonSizes.Small,
-    },
-    roundnessClasses, // Apply the full roundness classes directly
-    appearance, // Apply appearance-specific styling (shadows, borders, etc.)
-  );
-
-// Helper function to get default button roundness from theme
-function getDefaultButtonRoundness(): string {
-  return getComponentRoundness("button");
+function muiVariant(variant: ButtonVariants) {
+  return variant === ButtonVariants.Primary ? "contained" : "outlined";
 }
 
-// Helper function to get default button appearance from centralized theme system
-function getDefaultButtonAppearance(): string {
-  const themeConfig = getThemeConfig();
-  const appearance = APPEARANCE_STYLES[themeConfig.appearance];
-  return appearance?.button || "border border-button-light-border dark:border-button-dark-border"; // Fallback to flat design
+function muiColor(variant: ButtonVariants, color: ButtonColors) {
+  if (variant === ButtonVariants.Destructive || color === ButtonColors.Warn) return "error" as const;
+  if (color === ButtonColors.Neutral) return "inherit" as const;
+  return "primary" as const;
 }
+
+// MUI's color="inherit" resolves to a static `color: inherit; borderColor:
+// currentColor` that never consults the theme (verified in MUI's Button.js) —
+// it just takes whatever text colour happens to be ambient in the DOM. That
+// is harmless today because Neutral buttons currently sit on plain white
+// content cards, but it will silently break the moment a Neutral button is
+// placed on LandingShell's dark background in Phase 4, since LandingShell
+// never establishes an ambient text colour for a child to inherit — every
+// piece of text in it sets its own explicit MUI colour. Pin Neutral to
+// text.primary via sx so it tracks light/dark mode through the theme instead
+// of through inheritance.
+const neutralSx = { color: "text.primary", borderColor: "text.primary" };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       children,
-      className = "",
       variant = ButtonVariants.Primary,
       size = ButtonSizes.Small,
       color = ButtonColors.Primary,
-      roundness, // Will use theme default if not provided
+      type = "button",
+      className,
       ...props
     },
     ref,
-  ) => {
-    // Use theme-based values if not explicitly provided
-    const actualRoundness = roundness || getDefaultButtonRoundness();
-    const actualAppearance = getDefaultButtonAppearance();
-
-    return (
-      <button
-        type="button"
-        ref={ref}
-        className={`${getButtonClasses(size, variant, color, actualRoundness, actualAppearance)} ${className}`}
-        {...props}
-      >
-        {children}
-      </button>
-    );
-  },
+  ) => (
+    <MuiButton
+      ref={ref}
+      type={type}
+      variant={muiVariant(variant)}
+      color={muiColor(variant, color)}
+      size={size === ButtonSizes.Large ? "large" : "medium"}
+      sx={color === ButtonColors.Neutral ? neutralSx : undefined}
+      className={className}
+      {...props}
+    >
+      {children}
+    </MuiButton>
+  ),
 );
+
+Button.displayName = "Button";

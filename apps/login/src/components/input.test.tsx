@@ -1,194 +1,113 @@
-import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { TextInput } from "./input";
 
-describe("TextInput Component", () => {
-  const originalEnv = process.env;
+// No automatic RTL cleanup in this setup (test-setup.ts only imports jest-dom,
+// vitest.config.ts does not set globals: true).
+afterEach(cleanup);
 
-  beforeEach(() => {
-    process.env = { ...originalEnv };
+describe("TextInput", () => {
+  it("forwards data-testid onto the input element, not a wrapper", () => {
+    const { getByTestId } = renderWithTheme(<TextInput label="Email" data-testid="username-text-input" />);
+
+    // acceptance/tests/loginname-screen.ts calls pressSequentially() and
+    // toHaveValue() on this testid. A wrapper div silently breaks 25 specs.
+    expect(getByTestId("username-text-input").tagName).toBe("INPUT");
   });
 
-  afterEach(() => {
-    process.env = originalEnv;
+  it("forwards its ref to the input element, which react-hook-form depends on", () => {
+    const ref = { current: null as HTMLInputElement | null };
+    renderWithTheme(<TextInput label="Email" ref={ref} />);
+
+    // If this lands on the TextField root div instead, RHF registers a div:
+    // no value tracked, forms permanently invalid. See Task 5.
+    expect(ref.current?.tagName).toBe("INPUT");
   });
 
-  describe("Component Rendering", () => {
-    it("should render input with label", () => {
-      render(<TextInput label="Email" />);
-      expect(screen.getByText("Email")).toBeTruthy();
-    });
+  it("renders its label, bound to the input", () => {
+    const { getByLabelText } = renderWithTheme(<TextInput label="Email" />);
 
-    it("should render input with placeholder", () => {
-      const { container } = render(<TextInput label="Username" placeholder="Enter username" />);
-      const input = container.querySelector("input");
-      expect(input?.placeholder).toBe("Enter username");
-    });
-
-    it("should render input with default value", () => {
-      const { container } = render(<TextInput label="Name" defaultValue="John Doe" />);
-      const input = container.querySelector("input");
-      expect(input?.defaultValue).toBe("John Doe");
-    });
-
-    it("should show required indicator when required", () => {
-      render(<TextInput label="Required Field" required />);
-      expect(screen.getByText(/\*/)).toBeTruthy();
-    });
+    expect(getByLabelText(/Email/)).toBeInTheDocument();
   });
 
-  describe("Input States", () => {
-    it("should render disabled state", () => {
-      const { container } = render(<TextInput label="Disabled" disabled />);
-      const input = container.querySelector("input");
-      expect(input?.disabled).toBe(true);
-      // Should have disabled/pointer-events styles
-      expect(input?.className).toMatch(/pointer-events/);
-    });
+  it("shows an error message when given one", () => {
+    const { getByText } = renderWithTheme(<TextInput label="Email" error="Enter a valid email address" />);
 
-    it("should render error state with message", () => {
-      render(<TextInput label="Email" error="Invalid email" />);
-      expect(screen.getByText("Invalid email")).toBeTruthy();
-    });
-
-    it("should apply error styling when error is present", () => {
-      const { container } = render(<TextInput label="Email" error="Invalid" />);
-      const input = container.querySelector("input");
-      expect(input).toBeTruthy();
-      // Should have border-warn or warn-related styles
-      expect(input?.className).toMatch(/border-warn/);
-    });
-
-    it("should render success state with message", () => {
-      render(<TextInput label="Email" success="Valid email" />);
-      expect(screen.getByText("Valid email")).toBeTruthy();
-    });
+    expect(getByText("Enter a valid email address")).toBeInTheDocument();
   });
 
-  describe("Theme Integration", () => {
-    it("should apply theme-based roundness", () => {
-      const { container } = render(<TextInput label="Themed" />);
-      const input = container.querySelector("input");
-      // Should have some roundness class applied
-      expect(input?.className).toBeTruthy();
-      expect(input?.className).toMatch(/rounded/);
-    });
+  it("fires onChange with the event", () => {
+    const onChange = vi.fn();
+    const { getByLabelText } = renderWithTheme(<TextInput label="Email" onChange={onChange} />);
+    fireEvent.input(getByLabelText(/Email/), { target: { value: "a" } });
 
-    it("should completely override theme roundness with custom roundness prop", () => {
-      // Set theme to have full roundness
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "full";
-      const customRoundness = "custom-input-round";
-
-      const { container } = render(<TextInput label="Custom" roundness={customRoundness} />);
-      const input = container.querySelector("input");
-
-      // Should contain the custom roundness
-      expect(input?.className).toContain(customRoundness);
-
-      // The custom prop completely replaces theme roundness
-      expect(input).toBeTruthy();
-    });
-
-    it("should respect theme roundness changes", () => {
-      // Default theme
-      const { container: container1 } = render(<TextInput label="Default" />);
-      const input1 = container1.querySelector("input");
-      const defaultClasses = input1?.className;
-
-      // Change theme
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "full";
-      const { container: container2 } = render(<TextInput label="Full" />);
-      const input2 = container2.querySelector("input");
-
-      // Classes should be present
-      expect(defaultClasses).toBeTruthy();
-      expect(input2?.className).toBeTruthy();
-    });
+    expect(onChange).toHaveBeenCalled();
   });
 
-  describe("Input Behavior", () => {
-    it("should have autocomplete off by default", () => {
-      const { container } = render(<TextInput label="Test" />);
-      const input = container.querySelector("input");
-      expect(input?.autocomplete).toBe("off");
-    });
+  it("shows a success message with a check icon, styled distinctly from an error", () => {
+    const { getByText, container } = renderWithTheme(
+      <TextInput label="Email" success="Looks good" />,
+    );
 
-    it("should allow custom autocomplete", () => {
-      const { container } = render(<TextInput label="Email" autoComplete="email" />);
-      const input = container.querySelector("input");
-      expect(input?.autocomplete).toBe("email");
-    });
-
-    it("should pass through native input props", () => {
-      const { container } = render(<TextInput label="Test" maxLength={10} type="email" />);
-      const input = container.querySelector("input");
-      expect(input?.maxLength).toBe(10);
-      expect(input?.type).toBe("email");
-    });
-
-    it("should support autoFocus", () => {
-      const { container } = render(<TextInput label="Test" autoFocus />);
-      const input = container.querySelector("input");
-      expect(input).toHaveFocus();
-    });
+    expect(getByText("Looks good")).toBeInTheDocument();
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  describe("Styling", () => {
-    it("should have consistent base styling", () => {
-      const { container } = render(<TextInput label="Test" />);
-      const input = container.querySelector("input");
-      expect(input).toBeTruthy();
-      expect(input?.className).toBeTruthy();
-      expect(input?.className.length).toBeGreaterThan(0);
-      // Should have transition styles
-      expect(input?.className).toMatch(/transition/);
-    });
+  it("prefers the error message over success when both are given", () => {
+    const { getByText, queryByText } = renderWithTheme(
+      <TextInput label="Email" error="Enter a valid email address" success="Looks good" />,
+    );
 
-    it("should apply border styles", () => {
-      const { container } = render(<TextInput label="Test" />);
-      const input = container.querySelector("input");
-      expect(input).toBeTruthy();
-      // Should have border-related classes
-      expect(input?.className).toMatch(/border/);
-    });
-
-    it("should have focus styles", () => {
-      const { container } = render(<TextInput label="Test" />);
-      const input = container.querySelector("input");
-      expect(input).toBeTruthy();
-      // Should have focus-related classes
-      expect(input?.className).toMatch(/focus:/);
-    });
+    expect(getByText("Enter a valid email address")).toBeInTheDocument();
+    expect(queryByText("Looks good")).not.toBeInTheDocument();
   });
 
-  describe("Label Styling", () => {
-    it("should apply error color to label when error exists", () => {
-      const { container } = render(<TextInput label="Error Field" error="Error message" />);
-      const label = container.querySelector("label");
-      expect(label).toBeTruthy();
-    });
+  it("renders the suffix when given", () => {
+    const { getByText } = renderWithTheme(<TextInput label="Username" suffix="acme.com" />);
 
-    it("should have default label styling", () => {
-      const { container } = render(<TextInput label="Normal Field" />);
-      const label = container.querySelector("label");
-      expect(label).toBeTruthy();
-      expect(label?.className).toBeTruthy();
-    });
+    expect(getByText("@acme.com")).toBeInTheDocument();
   });
 
-  describe("Accessibility", () => {
-    it("should connect label to input", () => {
-      const { container } = render(<TextInput label="Accessible Input" />);
-      const label = container.querySelector("label");
-      const input = container.querySelector("input");
-      expect(label).toBeTruthy();
-      expect(input).toBeTruthy();
-    });
+  it("passes through native input attributes like autoComplete and disabled", () => {
+    const { getByTestId } = renderWithTheme(
+      <TextInput label="Email" data-testid="f" autoComplete="username" disabled />,
+    );
+    const input = getByTestId("f") as HTMLInputElement;
 
-    it("should show required indicator", () => {
-      const { container } = render(<TextInput label="UniqueRequiredField" required />);
-      const label = container.querySelector("label");
-      expect(label?.textContent).toContain("*");
-    });
+    expect(input.autocomplete).toBe("username");
+    expect(input.disabled).toBe(true);
+  });
+
+  it("renders the placeholder", () => {
+    const { getByPlaceholderText } = renderWithTheme(<TextInput label="Email" placeholder="you@acme.com" />);
+
+    expect(getByPlaceholderText("you@acme.com")).toBeInTheDocument();
+  });
+
+  it("renders the default value", () => {
+    const { getByTestId } = renderWithTheme(
+      <TextInput label="Email" data-testid="f" defaultValue="seed@acme.com" />,
+    );
+
+    expect((getByTestId("f") as HTMLInputElement).value).toBe("seed@acme.com");
+  });
+
+  it("marks the field required, which MUI surfaces as an asterisk on the label", () => {
+    const { getByTestId } = renderWithTheme(<TextInput label="Email" data-testid="f" required />);
+
+    expect((getByTestId("f") as HTMLInputElement).required).toBe(true);
+  });
+
+  it("defaults autoComplete to off, a deliberate privacy default", () => {
+    const { getByTestId } = renderWithTheme(<TextInput label="Email" data-testid="f" />);
+
+    expect((getByTestId("f") as HTMLInputElement).autocomplete).toBe("off");
+  });
+
+  it("forwards autoFocus to the input", () => {
+    const { getByTestId } = renderWithTheme(<TextInput label="Email" data-testid="f" autoFocus />);
+
+    expect(getByTestId("f")).toHaveFocus();
   });
 });

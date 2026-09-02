@@ -1,4 +1,4 @@
-import classNames from "clsx";
+import { Checkbox as MuiCheckbox, FormControlLabel } from "@mui/material";
 import { DetailedHTMLProps, forwardRef, InputHTMLAttributes, useEffect, useState } from "react";
 
 export type CheckboxProps = DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> & {
@@ -8,9 +8,11 @@ export type CheckboxProps = DetailedHTMLProps<InputHTMLAttributes<HTMLInputEleme
 };
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
-  { className = "", checked = false, disabled = false, onChangeVal, children, ...props },
+  { className, checked = false, disabled = false, onChangeVal, children, ...props },
   ref,
 ) {
+  // Local state mirroring the prop is existing behaviour that
+  // privacy-policy-checkboxes.tsx depends on — keep it.
   const [enabled, setEnabled] = useState<boolean>(checked);
 
   useEffect(() => {
@@ -18,27 +20,21 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   }, [checked]);
 
   return (
-    <div className="relative flex items-start">
-      <div className="flex h-5 items-center">
-        <div className="box-sizing block">
-          <input
-            ref={ref}
-            checked={enabled}
-            onChange={(event) => {
-              setEnabled(event.target?.checked);
-              if (onChangeVal) onChangeVal(event.target?.checked);
-            }}
-            disabled={disabled}
-            type="checkbox"
-            className={classNames(
-              "form-checkbox text-primary-light-500 dark:text-primary-dark-500 rounded border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 focus:ring-offset-0",
-              className,
-            )}
-            {...props}
-          />
-        </div>
-      </div>
-      {children}
-    </div>
+    <FormControlLabel
+      className={className}
+      label={children}
+      control={
+        <MuiCheckbox
+          inputRef={ref}
+          checked={enabled}
+          disabled={disabled}
+          onChange={(event) => {
+            setEnabled(event.target.checked);
+            onChangeVal?.(event.target.checked);
+          }}
+          slotProps={{ input: { ...props } }}
+        />
+      }
+    />
   );
 });

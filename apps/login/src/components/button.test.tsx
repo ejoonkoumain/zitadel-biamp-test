@@ -1,215 +1,123 @@
-import { render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Button, ButtonColors, ButtonSizes, ButtonVariants, getButtonClasses } from "./button";
+import { biampTheme } from "@bwp-web/styles";
+import { cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderWithTheme } from "@/test-utils/render-with-theme";
+import { Button, ButtonSizes, ButtonVariants, ButtonColors } from "./button";
 
-describe("Button Component", () => {
-  const originalEnv = process.env;
+// No automatic RTL cleanup in this setup (test-setup.ts only imports jest-dom,
+// vitest.config.ts does not set globals: true).
+afterEach(cleanup);
 
-  beforeEach(() => {
-    process.env = { ...originalEnv };
+describe("Button", () => {
+  it("renders its children", () => {
+    const { getByRole } = renderWithTheme(<Button>Continue</Button>);
+
+    expect(getByRole("button", { name: "Continue" })).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    process.env = originalEnv;
+  it("defaults to type=button so it never submits a form by accident", () => {
+    const { getByRole } = renderWithTheme(<Button>Continue</Button>);
+
+    expect(getByRole("button")).toHaveAttribute("type", "button");
   });
 
-  describe("Component Rendering", () => {
-    it("should render button with children", () => {
-      const { getByText } = render(<Button>Click me</Button>);
-      expect(getByText("Click me")).toBeTruthy();
-    });
+  it("honours an explicit type", () => {
+    const { getByRole } = renderWithTheme(<Button type="submit">Go</Button>);
 
-    it("should apply custom className", () => {
-      const { container } = render(<Button className="custom-class">Test</Button>);
-      const button = container.querySelector("button");
-      expect(button?.className).toContain("custom-class");
-    });
-
-    it("should pass through native button props", () => {
-      const { container } = render(<Button disabled>Test</Button>);
-      const button = container.querySelector("button");
-      expect(button?.disabled).toBe(true);
-    });
+    expect(getByRole("button")).toHaveAttribute("type", "submit");
   });
 
-  describe("Button Variants", () => {
-    it("should render primary variant by default", () => {
-      const { container } = render(<Button>Primary</Button>);
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
-      // Primary should have background color
-      expect(button?.className).toMatch(/bg-/);
-    });
+  it("fires onClick", () => {
+    const onClick = vi.fn();
+    const { getByRole } = renderWithTheme(<Button onClick={onClick}>Go</Button>);
+    getByRole("button").click();
 
-    it("should render secondary variant", () => {
-      const { container } = render(<Button variant={ButtonVariants.Secondary}>Secondary</Button>);
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
-      // Secondary should have border
-      expect(button?.className).toMatch(/border/);
-    });
-
-    it("should render all variant types", () => {
-      const variants = [ButtonVariants.Primary, ButtonVariants.Secondary, ButtonVariants.Destructive];
-
-      variants.forEach((variant) => {
-        const { container } = render(<Button variant={variant}>Test</Button>);
-        const button = container.querySelector("button");
-        expect(button).toBeTruthy();
-      });
-    });
+    expect(onClick).toHaveBeenCalledOnce();
   });
 
-  describe("Button Sizes", () => {
-    it("should render small size by default", () => {
-      const { container } = render(<Button>Small</Button>);
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
-      // Should have padding styles
-      expect(button?.className).toMatch(/p[xy]?-/);
-    });
+  it("does not fire onClick when disabled", () => {
+    const onClick = vi.fn();
+    const { getByRole } = renderWithTheme(
+      <Button onClick={onClick} disabled>
+        Go
+      </Button>,
+    );
+    getByRole("button").click();
 
-    it("should render large size", () => {
-      const { container } = render(<Button size={ButtonSizes.Large}>Large</Button>);
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
-      // Should have padding styles
-      expect(button?.className).toMatch(/p[xy]?-/);
-    });
-
-    it("should render all size types", () => {
-      const sizes = [ButtonSizes.Small, ButtonSizes.Large];
-
-      sizes.forEach((size) => {
-        const { container } = render(<Button size={size}>Test</Button>);
-        const button = container.querySelector("button");
-        expect(button).toBeTruthy();
-      });
-    });
+    expect(onClick).not.toHaveBeenCalled();
   });
 
-  describe("Button Colors", () => {
-    it("should render primary color by default", () => {
-      const { container } = render(<Button>Primary Color</Button>);
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
-      // Should have background color
-      expect(button?.className).toMatch(/bg-/);
-    });
-
-    it("should render warn color", () => {
-      const { container } = render(<Button color={ButtonColors.Warn}>Warn</Button>);
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
-      // Should have background color
-      expect(button?.className).toMatch(/bg-/);
-    });
-
-    it("should render all color types", () => {
-      const colors = [ButtonColors.Neutral, ButtonColors.Primary, ButtonColors.Warn];
-
-      colors.forEach((color) => {
-        const { container } = render(<Button color={color}>Test</Button>);
-        const button = container.querySelector("button");
-        expect(button).toBeTruthy();
-      });
-    });
+  it("accepts every variant, size and colour combination without throwing", () => {
+    for (const variant of Object.values(ButtonVariants)) {
+      for (const size of Object.values(ButtonSizes)) {
+        for (const color of Object.values(ButtonColors)) {
+          const { unmount } = renderWithTheme(
+            <Button variant={variant} size={size} color={color}>
+              x
+            </Button>,
+          );
+          unmount();
+        }
+      }
+    }
   });
 
-  describe("Theme Integration", () => {
-    it("should apply theme-based roundness", () => {
-      const { container } = render(<Button>Themed</Button>);
-      const button = container.querySelector("button");
-      // Should have some roundness class applied
-      expect(button?.className).toBeTruthy();
-      expect(button?.className).toMatch(/rounded/);
-    });
+  it("forwards a ref to the button element", () => {
+    const nodeRef: { current: HTMLButtonElement | null } = { current: null };
+    renderWithTheme(
+      <Button
+        ref={(el) => {
+          nodeRef.current = el;
+        }}
+      >
+        x
+      </Button>,
+    );
 
-    it("should completely override theme roundness with custom roundness prop", () => {
-      // Set theme to have full roundness
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "full";
-      const customRoundness = "custom-round-test";
-
-      const { container } = render(<Button roundness={customRoundness}>Custom</Button>);
-      const button = container.querySelector("button");
-
-      // Should contain the custom roundness
-      expect(button?.className).toContain(customRoundness);
-
-      // The custom prop completely replaces theme roundness
-      expect(button).toBeTruthy();
-    });
-
-    it("should change appearance when theme changes", () => {
-      // Default theme
-      const { container: container1 } = render(<Button>Default</Button>);
-      const button1 = container1.querySelector("button");
-      const defaultClasses = button1?.className;
-
-      // Change theme
-      process.env.NEXT_PUBLIC_THEME_ROUNDNESS = "full";
-      const { container: container2 } = render(<Button>Full</Button>);
-      const button2 = container2.querySelector("button");
-
-      // Classes should be present (we don't check exact values)
-      expect(defaultClasses).toBeTruthy();
-      expect(button2?.className).toBeTruthy();
-    });
+    expect(nodeRef.current?.tagName).toBe("BUTTON");
   });
 
-  describe("getButtonClasses", () => {
-    it("should return valid class string", () => {
-      const classes = getButtonClasses(ButtonSizes.Small, ButtonVariants.Primary, ButtonColors.Primary);
-      expect(typeof classes).toBe("string");
-      expect(classes.length).toBeGreaterThan(0);
-    });
+  it("passes data-testid through to the button element", () => {
+    const { getByTestId } = renderWithTheme(<Button data-testid="submit-button">x</Button>);
 
-    it("should include custom roundness classes", () => {
-      const customRoundness = "rounded-2xl";
-      const classes = getButtonClasses(ButtonSizes.Small, ButtonVariants.Primary, ButtonColors.Primary, customRoundness);
-      expect(classes).toContain(customRoundness);
-    });
-
-    it("should include appearance classes", () => {
-      const appearance = "shadow-lg";
-      const classes = getButtonClasses(
-        ButtonSizes.Small,
-        ButtonVariants.Primary,
-        ButtonColors.Primary,
-        "rounded-md",
-        appearance,
-      );
-      expect(classes).toContain(appearance);
-    });
-
-    it("should generate different classes for different variants", () => {
-      const primaryClasses = getButtonClasses(ButtonSizes.Small, ButtonVariants.Primary, ButtonColors.Primary);
-      const secondaryClasses = getButtonClasses(ButtonSizes.Small, ButtonVariants.Secondary, ButtonColors.Primary);
-
-      expect(primaryClasses).not.toBe(secondaryClasses);
-    });
-
-    it("should generate different classes for different sizes", () => {
-      const smallClasses = getButtonClasses(ButtonSizes.Small, ButtonVariants.Primary, ButtonColors.Primary);
-      const largeClasses = getButtonClasses(ButtonSizes.Large, ButtonVariants.Primary, ButtonColors.Primary);
-
-      expect(smallClasses).not.toBe(largeClasses);
-    });
+    expect(getByTestId("submit-button").tagName).toBe("BUTTON");
   });
 
-  describe("Accessibility", () => {
-    it("should have type='button' by default", () => {
-      const { container } = render(<Button>Test</Button>);
-      const button = container.querySelector("button");
-      expect(button?.type).toBe("button");
-    });
+  it("forwards className, which call sites still rely on until the Phase 4 sweep", () => {
+    const { getByRole } = renderWithTheme(<Button className="self-end">x</Button>);
 
-    it("should support disabled state", () => {
-      const { container } = render(<Button disabled>Disabled</Button>);
-      const button = container.querySelector("button");
-      expect(button?.disabled).toBe(true);
-      // Should have disabled styles
-      expect(button?.className).toMatch(/disabled:/);
-    });
+    // MUI merges its own classes in, so assert containment rather than equality.
+    expect(getByRole("button")).toHaveClass("self-end");
+  });
+
+  it("colours the Neutral variant from the theme rather than by ambient inheritance", () => {
+    const theme = biampTheme();
+    // biampTheme runs MUI's CSS-variables engine, so theme.vars.palette.text.primary
+    // is itself a "var(--mui-palette-text-primary, #111111)" string. jsdom's
+    // getComputedStyle resolves that fine when the fallback is present (see
+    // theme-smoke.test.tsx), but MUI's sx shorthand ("text.primary") emits the
+    // bare var() reference without a fallback, which jsdom reports verbatim
+    // instead of resolving — so compare against that same bare reference,
+    // derived from the theme rather than hardcoded, instead of a resolved rgb().
+    const cssVarName = theme.vars?.palette.text.primary.match(/var\((--[\w-]+)/)?.[1];
+    expect(cssVarName).toBeDefined();
+
+    // Wrap in an ancestor with a loud, unrelated text colour. MUI's
+    // color="inherit" is a literal `color: inherit` that never consults the
+    // theme (verified in @mui/material's Button.js) — if Neutral fell back to
+    // it, this button would resolve to the wrapper's red, exactly the bug that
+    // would surface on LandingShell's dark background in Phase 4. Pinning it
+    // via sx to theme.palette.text.primary must win over that inheritance.
+    const { getByRole } = renderWithTheme(
+      <div style={{ color: "red" }}>
+        <Button variant={ButtonVariants.Secondary} color={ButtonColors.Neutral}>
+          Back
+        </Button>
+      </div>,
+    );
+
+    const color = getComputedStyle(getByRole("button", { name: "Back" })).color;
+    expect(color).toBe(`var(${cssVarName})`);
+    expect(color).not.toBe("rgb(255, 0, 0)");
   });
 });

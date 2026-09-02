@@ -1,8 +1,7 @@
 "use client";
 
-import { getComponentRoundness } from "@/lib/theme";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import { clsx } from "clsx";
+import { InputAdornment, TextField } from "@mui/material";
 import { ChangeEvent, DetailedHTMLProps, forwardRef, InputHTMLAttributes, ReactNode } from "react";
 
 export type TextInputProps = DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> & {
@@ -15,27 +14,7 @@ export type TextInputProps = DetailedHTMLProps<InputHTMLAttributes<HTMLInputElem
   disabled?: boolean;
   onChange?: (value: ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (value: ChangeEvent<HTMLInputElement>) => void;
-  roundness?: string; // Allow override via props
 };
-
-const styles = (error: boolean, disabled: boolean, roundnessClasses: string = "rounded-md") =>
-  clsx(
-    {
-      "h-[40px] mb-[2px] p-[7px] bg-input-light-background dark:bg-input-dark-background transition-colors duration-300 grow": true,
-      "border border-input-light-border dark:border-input-dark-border hover:border-black hover:dark:border-white focus:border-primary-light-500 focus:dark:border-primary-dark-500": true,
-      "focus:outline-none focus:ring-0 text-base text-black dark:text-white placeholder:italic placeholder-gray-700 dark:placeholder-gray-700": true,
-      "border border-warn-light-500 dark:border-warn-dark-500 hover:border-warn-light-500 hover:dark:border-warn-dark-500 focus:border-warn-light-500 focus:dark:border-warn-dark-500":
-        error,
-      "pointer-events-none text-gray-500 dark:text-gray-800 border border-input-light-border dark:border-input-dark-border hover:border-light-hoverborder hover:dark:border-hoverborder cursor-default":
-        disabled,
-    },
-    roundnessClasses, // Apply the full roundness classes directly
-  );
-
-// Helper function to get default input roundness from theme
-function getDefaultInputRoundness(): string {
-  return getComponentRoundness("input");
-}
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   (
@@ -50,56 +29,59 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       success,
       onChange,
       onBlur,
-      roundness,
       ...props
     },
     ref,
   ) => {
-    // Use theme-based roundness if not explicitly provided
-    const actualRoundness = roundness || getDefaultInputRoundness();
+    // Split presentation props off so everything else — including data-* —
+    // can be routed to the <input> rather than the TextField root.
+    const { className, style, ...inputProps } = props;
+
+    // Reserve the helper-text row even when there's nothing to show, so the
+    // layout doesn't jump when an error/success message appears (matches the
+    // old fixed-height error row).
+    const helperText = error ? (
+      error
+    ) : success ? (
+      <>
+        <CheckCircleIcon
+          aria-hidden="true"
+          style={{ width: "1em", height: "1em", verticalAlign: "text-bottom", marginRight: 4 }}
+        />
+        {success}
+      </>
+    ) : (
+      " "
+    );
 
     return (
-      <label className="text-12px text-input-light-label dark:text-input-dark-label relative flex flex-col">
-        <span className={`mb-1 leading-3 ${error ? "text-warn-light-500 dark:text-warn-dark-500" : ""}`}>
-          {label} {required && "*"}
-        </span>
-        <input
-          suppressHydrationWarning
-          ref={ref}
-          className={styles(!!error, !!disabled, actualRoundness)}
-          defaultValue={defaultValue}
-          required={required}
-          disabled={disabled}
-          placeholder={placeholder}
-          autoComplete={props.autoComplete ?? "off"}
-          onChange={(e) => onChange && onChange(e)}
-          onBlur={(e) => onBlur && onBlur(e)}
-          {...props}
-        />
-
-        {suffix && (
-          <span
-            className={clsx(
-              "bg-background-light-500 dark:bg-background-dark-500 absolute right-[3px] bottom-[22px] z-30 translate-y-1/2 transform p-2",
-              // Extract just the roundness part for the suffix (no padding)
-              actualRoundness.split(" ")[0], // Take only the first part (rounded-full, rounded-md, etc.)
-            )}
-          >
-            @{suffix}
-          </span>
-        )}
-
-        <div className="leading-14.5px h-14.5px text-12px text-warn-light-500 dark:text-warn-dark-500 flex flex-row items-center">
-          <span>{error ? error : " "}</span>
-        </div>
-
-        {success && (
-          <div className="text-md mt-1 flex flex-row items-center text-green-500">
-            <CheckCircleIcon className="h-4 w-4" />
-            <span className="ml-1">{success}</span>
-          </div>
-        )}
-      </label>
+      <TextField
+        fullWidth
+        label={label}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+        required={required}
+        disabled={disabled}
+        error={Boolean(error)}
+        helperText={helperText}
+        onChange={onChange}
+        onBlur={onBlur}
+        inputRef={ref}
+        className={className}
+        style={style}
+        slotProps={{
+          htmlInput: { ...inputProps, autoComplete: props.autoComplete ?? "off" },
+          input: suffix
+            ? { endAdornment: <InputAdornment position="end">{`@${suffix}`}</InputAdornment> }
+            : undefined,
+          formHelperText:
+            success && !error
+              ? { sx: { color: "success.main", display: "flex", alignItems: "center" } }
+              : undefined,
+        }}
+      />
     );
   },
 );
+
+TextInput.displayName = "TextInput";
