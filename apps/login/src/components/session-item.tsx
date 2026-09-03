@@ -132,9 +132,9 @@ export function SessionItem({ session, reload, requestId }: { session: Session; 
             <span className="flex-grow"></span>
             <div className="relative flex flex-row items-center">
               {valid ? (
-                <div className="absolute right-6 mx-2 h-2 w-2 transform rounded-full bg-green-500 transition-all group-hover:right-6 sm:right-0"></div>
+                <div className="bg-state-success-light-color dark:bg-state-success-dark-color absolute right-6 mx-2 h-2 w-2 transform rounded-full transition-all group-hover:right-6 sm:right-0"></div>
               ) : (
-                <div className="absolute right-6 mx-2 h-2 w-2 transform rounded-full bg-red-500 transition-all group-hover:right-6 sm:right-0"></div>
+                <div className="bg-state-error-light-color dark:bg-state-error-dark-color absolute right-6 mx-2 h-2 w-2 transform rounded-full transition-all group-hover:right-6 sm:right-0"></div>
               )}
 
               <XCircleIcon

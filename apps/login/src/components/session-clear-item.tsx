@@ -95,9 +95,9 @@ export function SessionClearItem({ session, reload }: { session: Session; reload
           </div>
 
           {valid ? (
-            <div className="absolute right-0 mx-2 h-2 w-2 transform rounded-full bg-green-500 transition-all"></div>
+            <div className="bg-state-success-light-color dark:bg-state-success-dark-color absolute right-0 mx-2 h-2 w-2 transform rounded-full transition-all"></div>
           ) : (
-            <div className="absolute right-0 mx-2 h-2 w-2 transform rounded-full bg-red-500 transition-all"></div>
+            <div className="bg-state-error-light-color dark:bg-state-error-dark-color absolute right-0 mx-2 h-2 w-2 transform rounded-full transition-all"></div>
           )}
         </div>
       </button>

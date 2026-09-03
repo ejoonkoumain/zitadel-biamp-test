@@ -13,7 +13,7 @@ export default function Error({ error, reset }: any) {
   return (
     <Boundary labels={["Login Error"]} color="red">
       <div className="space-y-4">
-        <div className="text-sm text-red-500 dark:text-red-500">
+        <div className="text-state-error-light-color dark:text-state-error-dark-color text-sm">
           <strong className="font-bold">Error:</strong> {error?.message}
         </div>
         <div>

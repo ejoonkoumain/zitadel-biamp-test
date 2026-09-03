@@ -13,9 +13,9 @@ export enum AlertType {
 }
 
 const yellow =
-  "border-yellow-600/40 dark:border-yellow-500/20 bg-yellow-200/30 text-yellow-600 dark:bg-yellow-700/20 dark:text-yellow-200";
+  "border-state-alert-light-color/40 dark:border-state-alert-dark-color/20 bg-state-alert-light-background text-state-alert-light-color dark:bg-state-alert-dark-background dark:text-state-alert-dark-color";
 // const red =
-//   "border-red-600/40 dark:border-red-500/20 bg-red-200/30 text-red-600 dark:bg-red-700/20 dark:text-red-200";
+//   "border-state-error-light-color/40 dark:border-state-error-dark-color/20 bg-state-error-light-background text-state-error-light-color dark:bg-state-error-dark-background dark:text-state-error-dark-color";
 const neutral = "border-divider-light dark:border-divider-dark bg-black/5 text-gray-600 dark:bg-white/10 dark:text-gray-200";
 
 export function Alert({ children, type = AlertType.ALERT }: Props) {

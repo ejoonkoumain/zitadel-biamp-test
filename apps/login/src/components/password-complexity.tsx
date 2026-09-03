@@ -17,7 +17,7 @@ function CheckIcon({ title }: { title: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className="las la-check mr-2 h-6 w-6 flex-none text-lg text-green-500 dark:text-green-500"
+      className="las la-check text-state-success-light-color dark:text-state-success-dark-color mr-2 h-6 w-6 flex-none text-lg"
       role="img"
     >
       <title>{title}</title>

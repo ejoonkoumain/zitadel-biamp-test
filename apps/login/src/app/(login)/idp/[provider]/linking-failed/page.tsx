@@ -28,7 +28,7 @@ export default async function LinkingFailedPage(props: {
         <p className="ztdl-p text-center">
           <Translated i18nKey="errors.linkingFailed" namespace="idp" />
         </p>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-state-error-light-color dark:text-state-error-dark-color text-sm">{error}</p>}
       </div>
     </DynamicTheme>
   );

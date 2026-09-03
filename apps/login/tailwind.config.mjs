@@ -1,4 +1,39 @@
-import colors from "tailwindcss/colors";
+// Biamp Workplace palette. Mirrors the `colors` object and the semantic
+// palette roles in packages/styles/src/theme.tsx — keep the two in sync.
+//
+// `divider` reproduces MUI's alpha(grey900, 0.15) / alpha(white, 0.15).
+const biamp = {
+  black: "#000000",
+  white: "#ffffff",
+  grey: {
+    50: "#fafafa",
+    100: "#f5f5f5",
+    200: "#eeeeee",
+    300: "#c9c9c9",
+    400: "#878787",
+    500: "#646464",
+    600: "#484848",
+    700: "#333333",
+    800: "#222222",
+    900: "#111111",
+  },
+  success: {
+    light: { main: "#008A05", background: "#EAFEF0" },
+    dark: { main: "#00E941", background: "#093615" },
+  },
+  warning: {
+    light: { main: "#E06C00", background: "#FFF4D9" },
+    dark: { main: "#FFB800", background: "#41320E" },
+  },
+  error: {
+    light: { main: "#E0002D", background: "#FFEDF0" },
+    dark: { main: "#FF1744", background: "#2E1016" },
+  },
+  divider: {
+    light: "rgba(17,17,17,0.15)",
+    dark: "rgba(255,255,255,0.15)",
+  },
+};
 
 // Generate dynamic theme colors
 let themeColors = {
@@ -99,76 +134,84 @@ export default {
         "14px": ["0.875rem", { lineHeight: "1.5", letterSpacing: "-0.018rem", fontWeight: "400" }], // = body2
       },
       colors: {
-        gray: colors.zinc,
+        // Biamp grey replaces Tailwind's zinc. The shade keys line up exactly,
+        // so every existing text-gray-* / bg-gray-* call site is retargeted
+        // without touching a component. 950 has no Biamp grey, so it uses
+        // Biamp's pure black.
+        gray: { ...biamp.grey, 950: biamp.black },
         // Dynamic theme colors
         ...themeColors,
-        // State colors
+        // Status colors. Biamp splits error from warning, so `alert` maps to
+        // Biamp `warning` and `error` to Biamp `error`. `neutral` has no Biamp
+        // equivalent and is derived from the grey ramp.
         state: {
           success: {
             light: {
-              background: "#cbf4c9",
-              color: "#0e6245",
+              background: biamp.success.light.background,
+              color: biamp.success.light.main,
             },
             dark: {
-              background: "#68cf8340",
-              color: "#cbf4c9",
+              background: biamp.success.dark.background,
+              color: biamp.success.dark.main,
             },
           },
           error: {
             light: {
-              background: "#ffc1c1",
-              color: "#620e0e",
+              background: biamp.error.light.background,
+              color: biamp.error.light.main,
             },
             dark: {
-              background: "#af455359",
-              color: "#ffc1c1",
+              background: biamp.error.dark.background,
+              color: biamp.error.dark.main,
             },
           },
           neutral: {
             light: {
-              background: "#e4e7e4",
-              color: "#000000",
+              background: biamp.grey[200],
+              color: biamp.grey[900],
             },
             dark: {
-              background: "#1a253c",
-              color: "#ffffff",
+              background: biamp.grey[800],
+              color: biamp.grey[50],
             },
           },
           alert: {
             light: {
-              background: "#fbbf24",
-              color: "#92400e",
+              background: biamp.warning.light.background,
+              color: biamp.warning.light.main,
             },
             dark: {
-              background: "#92400e50",
-              color: "#fbbf24",
+              background: biamp.warning.dark.background,
+              color: biamp.warning.dark.main,
             },
           },
         },
         divider: {
-          dark: "rgba(135,149,161,.2)",
-          light: "rgba(135,149,161,.2)",
+          light: biamp.divider.light,
+          dark: biamp.divider.dark,
         },
+        // Biamp defines no input-specific colors, so these are derived from
+        // the ink and divider values, preserving the original alpha structure.
         input: {
           light: {
-            label: "#000000c7",
-            background: "#00000004",
-            border: "#1a191954",
-            hoverborder: "1a1b1b",
+            label: "#111111c7",
+            background: "#11111105",
+            border: biamp.divider.light,
+            hoverborder: biamp.grey[900],
           },
           dark: {
-            label: "#ffffffc7",
+            label: "#fafafac7",
             background: "#00000020",
-            border: "#f9f7f775",
-            hoverborder: "#e0e0e0",
+            border: biamp.divider.dark,
+            hoverborder: biamp.grey[200],
           },
         },
         button: {
           light: {
-            border: "#0000001f",
+            border: biamp.divider.light,
           },
           dark: {
-            border: "#ffffff1f",
+            border: biamp.divider.dark,
           },
         },
       },
