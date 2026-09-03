@@ -56,7 +56,7 @@ export const Boundary = ({
       })}
     >
       <div
-        className={clsx("absolute -top-2 flex space-x-1 text-[9px] leading-4 tracking-widest uppercase", {
+        className={clsx("text-sidebar absolute -top-2 flex space-x-1 leading-4 tracking-widest uppercase", {
           "left-3 lg:left-5": size === "small",
           "left-4 lg:left-9": size === "default",
         })}

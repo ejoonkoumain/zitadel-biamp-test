@@ -62,7 +62,7 @@ export function Avatar({ size = "base", name, loginName, imageUrl, shadow }: Ava
           : size === "base"
             ? "h-[38px] w-[38px] font-bold"
             : size === "small"
-              ? "!h-[32px] !w-[32px] text-[13px] font-bold"
+              ? "text-body2 !h-[32px] !w-[32px] font-bold"
               : "h-12 w-12"
       }`}
       style={resolvedTheme === "light" ? avatarStyleLight : avatarStyleDark}
@@ -76,7 +76,7 @@ export function Avatar({ size = "base", name, loginName, imageUrl, shadow }: Ava
           src={imageUrl}
         />
       ) : (
-        <span className={`uppercase ${size === "large" ? "text-xl" : "text-13px"}`}>{credentials}</span>
+        <span className={`uppercase ${size === "large" ? "text-h2 font-montserrat" : "text-body2"}`}>{credentials}</span>
       )}
     </div>
   );

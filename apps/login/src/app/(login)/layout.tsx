@@ -12,13 +12,35 @@ import { getAllowedLanguages } from "@/lib/zitadel";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { Lato } from "next/font/google";
+import localFont from "next/font/local";
 import { headers } from "next/headers";
 import React, { Suspense } from "react";
 
-const lato = Lato({
-  weight: ["400", "700", "900"],
-  subsets: ["latin"],
+// Open Sans carries body copy and every non-display variant.
+const openSans = localFont({
+  src: [
+    { path: "../../fonts/open-sans-regular.woff2", weight: "400", style: "normal" },
+    { path: "../../fonts/open-sans-regular-italic.woff2", weight: "400", style: "italic" },
+    { path: "../../fonts/open-sans-semibold.woff2", weight: "600", style: "normal" },
+    { path: "../../fonts/open-sans-semibold-italic.woff2", weight: "600", style: "italic" },
+    { path: "../../fonts/open-sans-bold.woff2", weight: "700", style: "normal" },
+    { path: "../../fonts/open-sans-bold-italic.woff2", weight: "700", style: "italic" },
+    { path: "../../fonts/open-sans-extrabold.woff2", weight: "800", style: "normal" },
+    { path: "../../fonts/open-sans-extrabold-italic.woff2", weight: "800", style: "italic" },
+  ],
+  variable: "--font-open-sans",
+  display: "swap",
+});
+
+// Montserrat is display-only: h0, h1, h2 and h4.
+const montserrat = localFont({
+  src: [
+    { path: "../../fonts/Montserrat-Medium.ttf", weight: "500", style: "normal" },
+    { path: "../../fonts/Montserrat-SemiBold.ttf", weight: "600", style: "normal" },
+    { path: "../../fonts/Montserrat-Bold.ttf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-montserrat",
+  display: "swap",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html className={`${lato.className}`} suppressHydrationWarning>
+    <html className={`${openSans.variable} ${montserrat.variable} font-sans`} suppressHydrationWarning>
       <head />
       <body>
         <ThemeProvider>

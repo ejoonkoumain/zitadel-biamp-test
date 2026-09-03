@@ -46,10 +46,57 @@ export default {
   },
   theme: {
     extend: {
-      // https://vercel.com/design/color
+      fontFamily: {
+        // Open Sans is the base family; Montserrat is display-only.
+        sans: ["var(--font-open-sans)", "system-ui", "sans-serif"],
+        montserrat: ["var(--font-montserrat)", "system-ui", "sans-serif"],
+      },
+      // Typography variants adopted verbatim from the Biamp Workplace MUI theme
+      // (packages/styles/src/theme.tsx). Each token carries size, line-height,
+      // letter-spacing and weight; the family comes from `font-sans` /
+      // `font-montserrat` because Tailwind's fontSize tuple cannot set it.
+      //
+      // Montserrat variants: h0, h1, h2, h4. Everything else is Open Sans —
+      // including h3, which deliberately differs from its size-twin h4.
       fontSize: {
-        "12px": "12px",
-        "14px": "14px",
+        h0: ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.105rem", fontWeight: "500" }],
+        h1: ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.07rem", fontWeight: "500" }],
+        h2: ["1.25rem", { lineHeight: "1.5", letterSpacing: "-0.025rem", fontWeight: "600" }],
+        h3: ["1rem", { lineHeight: "1.5", letterSpacing: "-0.02rem", fontWeight: "600" }],
+        h4: ["1rem", { lineHeight: "1.5", letterSpacing: "-0.02rem", fontWeight: "600" }],
+        body1: ["1rem", { lineHeight: "1.5", letterSpacing: "-0.02rem", fontWeight: "400" }],
+        body2: ["0.875rem", { lineHeight: "1.5", letterSpacing: "-0.018rem", fontWeight: "400" }],
+        caption: ["0.75rem", { lineHeight: "1.5", letterSpacing: "-0.015rem", fontWeight: "400" }],
+        // subtitle1/subtitle2 intentionally omit weight and letter-spacing,
+        // matching the MUI definition, which leaves both to inherit.
+        subtitle1: ["0.875rem", { lineHeight: "1.5" }],
+        subtitle2: ["0.75rem", { lineHeight: "1.5" }],
+        button: ["0.875rem", { lineHeight: "1.5", letterSpacing: "-0.018rem", fontWeight: "600" }],
+        sidebar: ["0.563rem", { lineHeight: "1.5", letterSpacing: "-0.013rem", fontWeight: "700" }],
+
+        // --- Stock-scale aliases -------------------------------------------
+        // Tailwind's default size keys are re-pointed at the variant values
+        // above so that upstream Zitadel code keeps Biamp typography without
+        // us rewriting its className strings. This keeps the fork's rebase
+        // surface small: `text-sm` in an upstream component already resolves
+        // to body2, so those files never need to appear in our diff.
+        //
+        // Prefer the semantic names (text-body2) in code we write ourselves.
+        // Sizes above 4xl are intentionally left on Tailwind's defaults rather
+        // than inventing a mapping for values the design system doesn't define.
+        xs: ["0.75rem", { lineHeight: "1.5", letterSpacing: "-0.015rem", fontWeight: "400" }], // = caption
+        sm: ["0.875rem", { lineHeight: "1.5", letterSpacing: "-0.018rem", fontWeight: "400" }], // = body2
+        base: ["1rem", { lineHeight: "1.5", letterSpacing: "-0.02rem", fontWeight: "400" }], // = body1
+        lg: ["1.25rem", { lineHeight: "1.5", letterSpacing: "-0.025rem", fontWeight: "600" }], // = h2
+        xl: ["1.25rem", { lineHeight: "1.5", letterSpacing: "-0.025rem", fontWeight: "600" }], // = h2
+        "2xl": ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.07rem", fontWeight: "500" }], // = h1
+        "3xl": ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.07rem", fontWeight: "500" }], // = h1
+        "4xl": ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.07rem", fontWeight: "500" }], // = h1
+
+        // Retained so the pre-existing `text-12px` / `text-14px` call sites
+        // keep working unchanged, now carrying variant values.
+        "12px": ["0.75rem", { lineHeight: "1.5", letterSpacing: "-0.015rem", fontWeight: "400" }], // = caption
+        "14px": ["0.875rem", { lineHeight: "1.5", letterSpacing: "-0.018rem", fontWeight: "400" }], // = body2
       },
       colors: {
         gray: colors.zinc,

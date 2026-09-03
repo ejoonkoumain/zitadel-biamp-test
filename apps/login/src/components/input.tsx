@@ -89,7 +89,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           </span>
         )}
 
-        <div className="leading-14.5px h-14.5px text-12px text-warn-light-500 dark:text-warn-dark-500 flex flex-row items-center">
+        <div className="h-14.5px text-12px text-warn-light-500 dark:text-warn-dark-500 flex flex-row items-center">
           <span>{error ? error : " "}</span>
         </div>
 

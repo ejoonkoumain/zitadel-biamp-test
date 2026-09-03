@@ -3,13 +3,35 @@
 @config "../../tailwind.config.mjs";
 
 @layer base {
+  // Heading variants from the Biamp Workplace MUI theme. Tailwind v4's preflight
+  // resets h1-h6 to `font-size: inherit`, so these element rules are what give
+  // the tags their size back. h5/h6 are deliberately undefined — the design
+  // system stops at h4.
+  //
+  // `text-center` on h1 is pre-existing layout, not part of the type definition.
   h1,
   .ztdl-h1 {
-    @apply text-center text-2xl;
+    @apply text-h1 font-montserrat text-center;
+  }
+
+  h2,
+  .ztdl-h2 {
+    @apply text-h2 font-montserrat;
+  }
+
+  // h3 stays on Open Sans by design, unlike its size-twin h4.
+  h3,
+  .ztdl-h3 {
+    @apply text-h3 font-sans;
+  }
+
+  h4,
+  .ztdl-h4 {
+    @apply text-h4 font-montserrat;
   }
 
   .ztdl-p {
-    @apply text-text-light-secondary-500 dark:text-text-dark-secondary-500 text-sm;
+    @apply text-text-light-secondary-500 dark:text-text-dark-secondary-500 text-body2;
   }
 }
 

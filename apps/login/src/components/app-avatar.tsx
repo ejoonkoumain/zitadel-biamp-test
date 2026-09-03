@@ -40,7 +40,7 @@ export function AppAvatar({ appName, imageUrl, shadow }: AvatarProps) {
           src={imageUrl}
         />
       ) : (
-        <span className={`text-3xl uppercase`}>{credentials}</span>
+        <span className={`text-h1 font-montserrat uppercase`}>{credentials}</span>
       )}
     </div>
   );

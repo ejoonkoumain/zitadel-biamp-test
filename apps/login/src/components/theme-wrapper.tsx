@@ -41,7 +41,7 @@ export const ThemeWrapper = ({ children, branding }: Props) => {
         styleEl.id = STYLE_ID;
         document.head.appendChild(styleEl);
       }
-      // Capture the current font-family (Lato from next/font) before overriding,
+      // Capture the current font-family (Open Sans from next/font) before overriding,
       // so it serves as fallback if the custom font fails to load.
       const existingFont = getComputedStyle(document.documentElement).fontFamily || "sans-serif";
       const fontStack = `'ZitadelCustomFont', ${existingFont}`;
@@ -56,10 +56,10 @@ export const ThemeWrapper = ({ children, branding }: Props) => {
       `;
 
       document.documentElement.style.setProperty("--zitadel-font-family", fontStack);
-      // Inline style overrides the class-based Lato from next/font
+      // Inline style overrides the class-based Open Sans from next/font
       document.documentElement.style.setProperty("font-family", fontStack);
     } else {
-      // No custom font — remove injected style and let Lato class take over
+      // No custom font — remove injected style and let the Open Sans class take over
       const existing = document.getElementById(STYLE_ID);
       if (existing) {
         existing.remove();
