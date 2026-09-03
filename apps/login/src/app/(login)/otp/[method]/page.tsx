@@ -1,13 +1,15 @@
 import { Alert } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { LoginOTP } from "@/components/login-otp";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getSessionCookieById } from "@/lib/cookies";
 import { getPublicHost } from "@/lib/server/host";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getLoginSettings, getSession } from "@/lib/zitadel";
+import { getLoginSettings, getSession } from "@/lib/zitadel";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -56,71 +58,57 @@ export default async function Page(props: {
     });
   }
 
-  // email links do not come with organization, thus we need to use the session's organization
-  const branding = await getBrandingSettings({
-    serviceConfig,
-    organization: organization ?? session?.factors?.user?.organizationId,
-  });
-
   const loginSettings = await getLoginSettings({
     serviceConfig,
     organization: organization ?? session?.factors?.user?.organizationId,
   });
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="verify.title" namespace="otp" />
-        </h1>
-        {method === "time-based" && (
-          <p className="ztdl-p">
-            <Translated i18nKey="verify.totpDescription" namespace="otp" />
-          </p>
-        )}
-        {method === "sms" && (
-          <p className="ztdl-p">
-            <Translated i18nKey="verify.smsDescription" namespace="otp" />
-          </p>
-        )}
-        {method === "email" && (
-          <p className="ztdl-p">
-            <Translated i18nKey="verify.emailDescription" namespace="otp" />
-          </p>
-        )}
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="verify.title" namespace="otp" />}
+      subtitle={
+        method === "time-based" ? (
+          <Translated i18nKey="verify.totpDescription" namespace="otp" />
+        ) : method === "sms" ? (
+          <Translated i18nKey="verify.smsDescription" namespace="otp" />
+        ) : method === "email" ? (
+          <Translated i18nKey="verify.emailDescription" namespace="otp" />
+        ) : undefined
+      }
+    >
+      {!session && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-        {!session && (
-          <div className="py-4">
-            <Alert>
-              <Translated i18nKey="unknownContext" namespace="error" />
-            </Alert>
-          </div>
-        )}
+      {session && (
+        <UserAvatar
+          loginName={loginName ?? session.factors?.user?.loginName}
+          displayName={session.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      )}
 
-        {session && (
-          <UserAvatar
-            loginName={loginName ?? session.factors?.user?.loginName}
-            displayName={session.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        )}
-      </div>
-
-      <div className="w-full">
-        {method && session && (
-          <LoginOTP
-            loginName={loginName ?? session.factors?.user?.loginName}
-            sessionId={sessionId}
-            requestId={requestId}
-            organization={organization ?? session?.factors?.user?.organizationId}
-            method={method}
-            loginSettings={loginSettings}
-            host={host}
-            code={code}
-          ></LoginOTP>
-        )}
-      </div>
-    </DynamicTheme>
+      {method && session && (
+        <LoginOTP
+          loginName={loginName ?? session.factors?.user?.loginName}
+          sessionId={sessionId}
+          requestId={requestId}
+          organization={organization ?? session?.factors?.user?.organizationId}
+          method={method}
+          loginSettings={loginSettings}
+          host={host}
+          code={code}
+        />
+      )}
+    </LandingShell>
   );
 }

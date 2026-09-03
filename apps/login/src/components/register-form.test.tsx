@@ -1,4 +1,5 @@
-import { cleanup, render } from "@testing-library/react";
+import { renderWithTheme } from "@/test-utils/render-with-theme";
+import { cleanup } from "@testing-library/react";
 import { create } from "@zitadel/client";
 import { LegalAndSupportSettingsSchema } from "@zitadel/proto/zitadel/settings/v2/legal_settings_pb";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -26,7 +27,10 @@ describe("RegisterForm", () => {
   afterEach(cleanup);
 
   test("should autofocus the firstname input on mount", () => {
-    const { getByTestId } = render(<RegisterForm legal={defaultLegal} organization="org-1" idpCount={0} />);
+    // Rendered through renderWithTheme (not a bare render) because the field
+    // is now a LandingFormField/TextField, which reads the Biamp theme's
+    // palette — see test-utils/render-with-theme.tsx.
+    const { getByTestId } = renderWithTheme(<RegisterForm legal={defaultLegal} organization="org-1" idpCount={0} />);
     expect(getByTestId("firstname-text-input")).toHaveFocus();
   });
 });

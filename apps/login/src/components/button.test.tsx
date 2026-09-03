@@ -1,8 +1,8 @@
+import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { biampTheme } from "@bwp-web/styles";
 import { cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { renderWithTheme } from "@/test-utils/render-with-theme";
-import { Button, ButtonSizes, ButtonVariants, ButtonColors } from "./button";
+import { Button, ButtonColors, ButtonSizes, ButtonVariants } from "./button";
 
 // No automatic RTL cleanup in this setup (test-setup.ts only imports jest-dom,
 // vitest.config.ts does not set globals: true).

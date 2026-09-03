@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "@mui/material";
 import { forwardRef } from "react";
 import { Translated } from "../translated";
 import { BaseButton, SignInWithIdentityProviderProps } from "./base-button";
@@ -10,7 +11,7 @@ export const SignInWithGitlab = forwardRef<HTMLButtonElement, SignInWithIdentity
 
     return (
       <BaseButton {...restProps} ref={ref}>
-        <div className="flex h-12 w-12 items-center justify-center">
+        <Box sx={{ display: "flex", height: 48, width: 48, alignItems: "center", justifyContent: "center" }}>
           <svg xmlns="http://www.w3.org/2000/svg" width={25} height={24} fill="none">
             <path
               fill="#e24329"
@@ -29,11 +30,13 @@ export const SignInWithGitlab = forwardRef<HTMLButtonElement, SignInWithIdentity
               d="M5.01 11.461a11.43 11.43 0 0 0-4.56-2.05L.416 9.5a6.297 6.297 0 0 0 2.09 7.278l.012.01.03.022 5.16 3.867 4.745-3.584-7.444-5.632z"
             />
           </svg>
-        </div>
+        </Box>
         {children ? (
           children
         ) : (
-          <span className="ml-4">{name ? name : <Translated i18nKey="signInWithGitlab" namespace="idp" />}</span>
+          <Box component="span" sx={{ ml: 2 }}>
+            {name ? name : <Translated i18nKey="signInWithGitlab" namespace="idp" />}
+          </Box>
         )}
       </BaseButton>
     );

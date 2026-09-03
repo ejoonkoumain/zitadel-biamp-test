@@ -2,6 +2,7 @@
 
 import { Alert } from "@/components/alert";
 import { getDeviceAuthorizationRequest } from "@/lib/server/oidc";
+import { Box, Stack } from "@mui/material";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -59,40 +60,37 @@ export function DeviceCodeForm({ userCode }: { userCode?: string }) {
   }
 
   return (
-    <>
-      <form className="w-full">
-        <div className="mt-4">
-          <TextInput
-            type="text"
-            autoComplete="one-time-code"
-            autoFocus
-            {...register("userCode", { required: t("usercode.required.code") })}
-            label={t("usercode.labels.code")}
-            data-testid="code-text-input"
-          />
-        </div>
+    <Box component="form" width="100%">
+      <Box mt={2}>
+        <TextInput
+          type="text"
+          autoComplete="one-time-code"
+          autoFocus
+          {...register("userCode", { required: t("usercode.required.code") })}
+          label={t("usercode.labels.code")}
+          data-testid="code-text-input"
+        />
+      </Box>
 
-        {error && (
-          <div className="py-4" data-testid="error">
-            <Alert>{error}</Alert>
-          </div>
-        )}
+      {error && (
+        <Box py={2} data-testid="error">
+          <Alert>{error}</Alert>
+        </Box>
+      )}
 
-        <div className="mt-8 flex w-full flex-row items-center">
-          <BackButton />
-          <span className="flex-grow"></span>
-          <Button
-            type="submit"
-            className="self-end"
-            variant={ButtonVariants.Primary}
-            disabled={loading || !formState.isValid}
-            onClick={handleSubmit(submitCodeAndContinue)}
-            data-testid="submit-button"
-          >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="usercode.submit" namespace="device" />
-          </Button>
-        </div>
-      </form>
-    </>
+      <Stack direction="row" alignItems="center" width="100%" mt={4}>
+        <BackButton />
+        <Box flexGrow={1} />
+        <Button
+          type="submit"
+          variant={ButtonVariants.Primary}
+          disabled={loading || !formState.isValid}
+          onClick={handleSubmit(submitCodeAndContinue)}
+          data-testid="submit-button"
+        >
+          {loading && <Spinner />} <Translated i18nKey="usercode.submit" namespace="device" />
+        </Button>
+      </Stack>
+    </Box>
   );
 }

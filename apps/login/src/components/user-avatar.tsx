@@ -1,12 +1,7 @@
 import { Avatar } from "@/components/avatar";
-import { getComponentRoundness } from "@/lib/theme";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { Box, Stack } from "@mui/material";
 import Link from "next/link";
-
-// Helper function to get user avatar container roundness from theme
-function getUserAvatarRoundness(): string {
-  return getComponentRoundness("avatarContainer");
-}
 
 type Props = {
   loginName?: string;
@@ -15,9 +10,13 @@ type Props = {
   searchParams?: Record<string | number | symbol, string | undefined>;
 };
 
+// Rendered as a direct child of `LandingShell` on every route that uses it
+// (the shell's fixed dark background image, not a `Card`/`LandingFormPanel`),
+// so text/icon colour uses the mode-independent `common.white` /
+// `text.sidebar` tokens rather than `text.primary`, which flips to
+// near-black in light mode and would disappear here.
 export function UserAvatar({ loginName, displayName, showDropdown, searchParams }: Props) {
   const params = new URLSearchParams({});
-  const userAvatarRoundness = getUserAvatarRoundness();
 
   if (searchParams?.sessionId) {
     params.set("sessionId", searchParams.sessionId);
@@ -36,20 +35,50 @@ export function UserAvatar({ loginName, displayName, showDropdown, searchParams 
   }
 
   return (
-    <div className={`flex h-full flex-row items-center border p-[1px] dark:border-white/20 ${userAvatarRoundness}`}>
-      <div>
+    <Stack
+      direction="row"
+      alignItems="center"
+      sx={{ height: "100%", border: 1, borderColor: "rgba(255, 255, 255, 0.2)", borderRadius: 999, p: "1px" }}
+    >
+      <Box>
         <Avatar size="small" name={displayName ?? loginName ?? ""} loginName={loginName ?? ""} />
-      </div>
-      <span className="text-14px ml-4 max-w-[250px] overflow-hidden pr-4 text-ellipsis">{loginName}</span>
-      <span className="flex-grow"></span>
+      </Box>
+      <Box
+        component="span"
+        sx={{
+          fontSize: 14,
+          ml: 2,
+          maxWidth: 250,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          pr: 2,
+          color: "text.sidebar",
+        }}
+      >
+        {loginName}
+      </Box>
+      <Box flexGrow={1} />
       {showDropdown && (
-        <Link
+        <Box
+          component={Link}
           href={"/accounts?" + params}
-          className={`mr-1 ml-4 flex items-center justify-center p-1 transition-all hover:bg-black/10 dark:hover:bg-white/10 ${userAvatarRoundness}`}
+          sx={{
+            mr: 0.5,
+            ml: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            p: 0.5,
+            borderRadius: 999,
+            color: "text.sidebar",
+            transition: "background-color 0.2s",
+            "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
+          }}
         >
-          <ChevronDownIcon className="h-4 w-4" />
-        </Link>
+          <ChevronDownIcon style={{ width: 16, height: 16 }} />
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }

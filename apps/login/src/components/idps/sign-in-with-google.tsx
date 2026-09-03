@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "@mui/material";
 import { forwardRef } from "react";
 import { Translated } from "../translated";
 import { BaseButton, SignInWithIdentityProviderProps } from "./base-button";
@@ -10,7 +11,7 @@ export const SignInWithGoogle = forwardRef<HTMLButtonElement, SignInWithIdentity
 
     return (
       <BaseButton {...restProps} ref={ref}>
-        <div className="flex h-12 w-12 items-center justify-center">
+        <Box sx={{ display: "flex", height: 48, width: 48, alignItems: "center", justifyContent: "center" }}>
           <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" id="Capa_1" viewBox="0 0 150 150">
             <style>
               {
@@ -42,11 +43,13 @@ export const SignInWithGoogle = forwardRef<HTMLButtonElement, SignInWithIdentity
               }}
             />
           </svg>
-        </div>
+        </Box>
         {children ? (
           children
         ) : (
-          <span className="ml-4">{name ? name : <Translated i18nKey="signInWithGoogle" namespace="idp" />}</span>
+          <Box component="span" sx={{ ml: 2 }}>
+            {name ? name : <Translated i18nKey="signInWithGoogle" namespace="idp" />}
+          </Box>
         )}
       </BaseButton>
     );

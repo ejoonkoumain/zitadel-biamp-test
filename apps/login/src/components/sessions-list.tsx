@@ -1,5 +1,6 @@
 "use client";
 
+import { Stack } from "@mui/material";
 import { timestampDate } from "@zitadel/client";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
 import { useState } from "react";
@@ -15,7 +16,7 @@ type Props = {
 export function SessionsList({ sessions, requestId }: Props) {
   const [list, setList] = useState<Session[]>(sessions);
   return sessions ? (
-    <div className="flex flex-col space-y-2">
+    <Stack gap={1}>
       {list
         .filter((session) => session?.factors?.user?.loginName)
         // sort by change date descending
@@ -37,7 +38,7 @@ export function SessionsList({ sessions, requestId }: Props) {
             />
           );
         })}
-    </div>
+    </Stack>
   ) : (
     <Alert>
       <Translated i18nKey="noResults" namespace="accounts" />

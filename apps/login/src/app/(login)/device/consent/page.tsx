@@ -1,9 +1,11 @@
+import { Alert } from "@/components/alert";
+import { LandingShell } from "@/components/bwp/landing-shell";
 import { ConsentScreen } from "@/components/consent";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { getServiceConfig } from "@/lib/service-url";
-import { getBrandingSettings, getDefaultOrg, getDeviceAuthorizationRequest } from "@/lib/zitadel";
-import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
+import { getDeviceAuthorizationRequest } from "@/lib/zitadel";
 import { headers } from "next/headers";
 
 export default async function Page(props: { searchParams: Promise<Record<string | number | symbol, string | undefined>> }) {
@@ -15,9 +17,18 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   if (!userCode || !requestId) {
     return (
-      <div>
-        <Translated i18nKey="noUserCode" namespace="error" />
-      </div>
+      <LandingShell
+        actions={
+          <>
+            <LanguageSwitcher />
+            <ThemeSwitch />
+          </>
+        }
+      >
+        <Alert>
+          <Translated i18nKey="noUserCode" namespace="error" />
+        </Alert>
+      </LandingShell>
     );
   }
 
@@ -28,21 +39,20 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   if (!deviceAuthorizationRequest) {
     return (
-      <div>
-        <Translated i18nKey="noDeviceRequest" namespace="error" />
-      </div>
+      <LandingShell
+        actions={
+          <>
+            <LanguageSwitcher />
+            <ThemeSwitch />
+          </>
+        }
+      >
+        <Alert>
+          <Translated i18nKey="noDeviceRequest" namespace="error" />
+        </Alert>
+      </LandingShell>
     );
   }
-
-  let defaultOrganization;
-  if (!organization) {
-    const org: Organization | null = await getDefaultOrg({ serviceConfig });
-    if (org) {
-      defaultOrganization = org.id;
-    }
-  }
-
-  const branding = await getBrandingSettings({ serviceConfig, organization: organization ?? defaultOrganization });
 
   const params = new URLSearchParams();
 
@@ -55,29 +65,30 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="request.title" namespace="device" data={{ appName: deviceAuthorizationRequest?.appName }} />
-        </h1>
-
-        <p className="ztdl-p">
-          <Translated
-            i18nKey="request.description"
-            namespace="device"
-            data={{ appName: deviceAuthorizationRequest?.appName }}
-          />
-        </p>
-      </div>
-
-      <div className="w-full">
-        <ConsentScreen
-          deviceAuthorizationRequestId={deviceAuthorizationRequest?.id}
-          scope={deviceAuthorizationRequest.scope}
-          appName={deviceAuthorizationRequest?.appName}
-          nextUrl={`/loginname?` + params}
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={
+        <Translated i18nKey="request.title" namespace="device" data={{ appName: deviceAuthorizationRequest?.appName }} />
+      }
+      subtitle={
+        <Translated
+          i18nKey="request.description"
+          namespace="device"
+          data={{ appName: deviceAuthorizationRequest?.appName }}
         />
-      </div>
-    </DynamicTheme>
+      }
+    >
+      <ConsentScreen
+        deviceAuthorizationRequestId={deviceAuthorizationRequest?.id}
+        scope={deviceAuthorizationRequest.scope}
+        appName={deviceAuthorizationRequest?.appName}
+        nextUrl={`/loginname?` + params}
+      />
+    </LandingShell>
   );
 }

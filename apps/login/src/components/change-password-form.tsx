@@ -3,12 +3,13 @@
 import { lowerCaseValidator, numberValidator, symbolValidator, upperCaseValidator } from "@/helpers/validators";
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { checkSessionAndSetPassword, sendPassword } from "@/lib/server/password";
+import { Box, Stack } from "@mui/material";
 import { create } from "@zitadel/client";
 import { ChecksSchema } from "@zitadel/proto/zitadel/session/v2/session_service_pb";
 import { PasswordComplexitySettings } from "@zitadel/proto/zitadel/settings/v2/password_settings_pb";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { CSSProperties, useState } from "react";
 import { FieldValues, useForm } from "react-hook-form";
 import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
@@ -33,6 +34,20 @@ type Props = {
   loginName: string;
   requestId?: string;
   organization?: string;
+};
+
+// Reproduces Tailwind's `.sr-only` utility inline: visually hidden but still
+// present for password managers / screen readers, without a Tailwind class.
+const srOnlyStyle: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
 };
 
 export function ChangePasswordForm({ passwordComplexitySettings, sessionId, loginName, requestId, organization }: Props) {
@@ -123,8 +138,8 @@ export function ChangePasswordForm({ passwordComplexitySettings, sessionId, logi
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className="mb-4 grid grid-cols-1 gap-4 pt-4">
+      <Box component="form" width="100%">
+        <Stack gap={2} mb={2} pt={2}>
           <input
             type="text"
             name="username"
@@ -133,49 +148,43 @@ export function ChangePasswordForm({ passwordComplexitySettings, sessionId, logi
             readOnly
             tabIndex={-1}
             aria-hidden="true"
-            className="sr-only"
+            style={srOnlyStyle}
           />
-          <div className="">
-            <TextInput
-              type="password"
-              autoComplete="current-password"
-              autoFocus
-              required
-              {...register("currentPassword", {
-                required: t("change.required.currentPassword"),
-              })}
-              label={t("change.labels.currentPassword")}
-              error={errors.currentPassword?.message as string}
-              data-testid="password-change-current-text-input"
-            />
-          </div>
-          <div className="">
-            <TextInput
-              type="password"
-              autoComplete="new-password"
-              required
-              {...register("password", {
-                required: t("change.required.newPassword"),
-              })}
-              label={t("change.labels.newPassword")}
-              error={errors.password?.message as string}
-              data-testid="password-change-text-input"
-            />
-          </div>
-          <div className="">
-            <TextInput
-              type="password"
-              required
-              autoComplete="new-password"
-              {...register("confirmPassword", {
-                required: t("change.required.confirmPassword"),
-              })}
-              label={t("change.labels.confirmPassword")}
-              error={errors.confirmPassword?.message as string}
-              data-testid="password-change-confirm-text-input"
-            />
-          </div>
-        </div>
+          <TextInput
+            type="password"
+            autoComplete="current-password"
+            autoFocus
+            required
+            {...register("currentPassword", {
+              required: t("change.required.currentPassword"),
+            })}
+            label={t("change.labels.currentPassword")}
+            error={errors.currentPassword?.message as string}
+            data-testid="password-change-current-text-input"
+          />
+          <TextInput
+            type="password"
+            autoComplete="new-password"
+            required
+            {...register("password", {
+              required: t("change.required.newPassword"),
+            })}
+            label={t("change.labels.newPassword")}
+            error={errors.password?.message as string}
+            data-testid="password-change-text-input"
+          />
+          <TextInput
+            type="password"
+            required
+            autoComplete="new-password"
+            {...register("confirmPassword", {
+              required: t("change.required.confirmPassword"),
+            })}
+            label={t("change.labels.confirmPassword")}
+            error={errors.confirmPassword?.message as string}
+            data-testid="password-change-confirm-text-input"
+          />
+        </Stack>
 
         {passwordComplexitySettings && (
           <PasswordComplexity
@@ -187,7 +196,7 @@ export function ChangePasswordForm({ passwordComplexitySettings, sessionId, logi
 
         {error && <Alert>{error}</Alert>}
 
-        <div className="mt-8 flex w-full flex-row items-center justify-between">
+        <Stack direction="row" width="100%" alignItems="center" justifyContent="space-between" mt={4}>
           <BackButton data-testid="back-button" />
           <Button
             type="submit"
@@ -196,10 +205,10 @@ export function ChangePasswordForm({ passwordComplexitySettings, sessionId, logi
             onClick={handleSubmit(submitChange)}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="change.submit" namespace="password" />
+            {loading && <Spinner />} <Translated i18nKey="change.submit" namespace="password" />
           </Button>
-        </div>
-      </form>
+        </Stack>
+      </Box>
     </>
   );
 }

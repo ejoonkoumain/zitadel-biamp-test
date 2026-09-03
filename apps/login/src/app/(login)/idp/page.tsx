@@ -1,8 +1,10 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SignInWithIdp } from "@/components/sign-in-with-idp";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { getServiceConfig } from "@/lib/service-url";
-import { getActiveIdentityProviders, getBrandingSettings } from "@/lib/zitadel";
+import { getActiveIdentityProviders } from "@/lib/zitadel";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -25,30 +27,26 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     return resp.identityProviders;
   });
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
-
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="idp" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="description" namespace="idp" />
-        </p>
-      </div>
-
-      <div className="w-full">
-        {!!identityProviders?.length && (
-          <SignInWithIdp
-            identityProviders={identityProviders}
-            requestId={requestId}
-            organization={organization}
-            postErrorRedirectUrl="/idp"
-            showLabel={false}
-          ></SignInWithIdp>
-        )}
-      </div>
-    </DynamicTheme>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="idp" />}
+      subtitle={<Translated i18nKey="description" namespace="idp" />}
+    >
+      {!!identityProviders?.length && (
+        <SignInWithIdp
+          identityProviders={identityProviders}
+          requestId={requestId}
+          organization={organization}
+          postErrorRedirectUrl="/idp"
+          showLabel={false}
+        />
+      )}
+    </LandingShell>
   );
 }

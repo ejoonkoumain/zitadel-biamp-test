@@ -23,7 +23,7 @@ vi.mock("@/lib/client", () => ({
 }));
 
 const defaultComplexitySettings = create(PasswordComplexitySettingsSchema, {
-  minLength: 8n,
+  minLength: BigInt(8),
   requiresUppercase: false,
   requiresLowercase: false,
   requiresNumber: false,

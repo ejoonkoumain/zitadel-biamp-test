@@ -2,6 +2,8 @@
 
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { registerUser } from "@/lib/server/register";
+import { LandingFormActions, LandingFormField, LandingFormPanel } from "@bwp-web/components";
+import { Box, Stack, Typography } from "@mui/material";
 import { LegalAndSupportSettings } from "@zitadel/proto/zitadel/settings/v2/legal_settings_pb";
 import { LoginSettings, PasskeysType } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { useTranslations } from "next-intl";
@@ -13,7 +15,6 @@ import { AuthenticationMethod, AuthenticationMethodRadio, methods } from "./auth
 import { AutoSubmitForm } from "./auto-submit-form";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
-import { TextInput } from "./input";
 import { PrivacyPolicyCheckboxes } from "./privacy-policy-checkboxes";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
@@ -113,98 +114,105 @@ export function RegisterForm({
   const isLegalAcceptanceRequired = !!(legal?.tosLink || legal?.privacyPolicyLink);
   const canSubmit = formState.isValid && (!isLegalAcceptanceRequired || tosAndPolicyAccepted);
 
+  // LandingFormField spreads onto MUI TextField, whose `ref` targets the root
+  // div — not the <input>. Registering the whole field would hand RHF that
+  // div's ref, so formState.isValid would never flip true and the submit
+  // button would stay permanently disabled. Split the ref out and hand it to
+  // TextField's `inputRef` instead, which does target the <input> (see
+  // username-form.tsx / password-form.tsx for the same pattern).
+  const { ref: firstnameRef, ...firstnameField } = register("firstname", { required: t("required.firstname") });
+  const { ref: lastnameRef, ...lastnameField } = register("lastname", { required: t("required.lastname") });
+  const { ref: emailRef, ...emailField } = register("email", { required: t("required.email") });
+
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className="mb-4 grid grid-cols-2 gap-4">
-          <div className="">
-            <TextInput
+      <LandingFormPanel
+        onSubmit={handleSubmit((values) => {
+          const usePasswordToContinue: boolean =
+            loginSettings?.allowLocalAuthentication && loginSettings?.passkeysType == PasskeysType.ALLOWED
+              ? !(selected === methods[0]) // choose selection if both available
+              : !!loginSettings?.allowLocalAuthentication; // if password is chosen
+          // set password as default if only password is allowed
+          return submitAndContinue(values, usePasswordToContinue);
+        })}
+      >
+        <Stack direction="row" gap={2}>
+          <Box flex={1}>
+            <LandingFormField
               type="firstname"
               autoComplete="firstname"
               autoFocus
               required
-              {...register("firstname", { required: t("required.firstname") })}
+              {...firstnameField}
+              inputRef={firstnameRef}
               label={t("labels.firstname")}
-              error={errors.firstname?.message as string}
-              data-testid="firstname-text-input"
+              error={Boolean(errors.firstname)}
+              helperText={(errors.firstname?.message as string) || " "}
+              slotProps={{ htmlInput: { "data-testid": "firstname-text-input" } }}
             />
-          </div>
-          <div className="">
-            <TextInput
+          </Box>
+          <Box flex={1}>
+            <LandingFormField
               type="lastname"
               autoComplete="lastname"
               required
-              {...register("lastname", { required: t("required.lastname") })}
+              {...lastnameField}
+              inputRef={lastnameRef}
               label={t("labels.lastname")}
-              error={errors.lastname?.message as string}
-              data-testid="lastname-text-input"
+              error={Boolean(errors.lastname)}
+              helperText={(errors.lastname?.message as string) || " "}
+              slotProps={{ htmlInput: { "data-testid": "lastname-text-input" } }}
             />
-          </div>
-          <div className="col-span-2">
-            <TextInput
-              type="email"
-              autoComplete="email"
-              required
-              {...register("email", { required: t("required.email") })}
-              label={t("labels.email")}
-              error={errors.email?.message as string}
-              data-testid="email-text-input"
-            />
-          </div>
-        </div>
+          </Box>
+        </Stack>
+        <LandingFormField
+          type="email"
+          autoComplete="email"
+          required
+          {...emailField}
+          inputRef={emailRef}
+          label={t("labels.email")}
+          error={Boolean(errors.email)}
+          helperText={(errors.email?.message as string) || " "}
+          slotProps={{ htmlInput: { "data-testid": "email-text-input" } }}
+        />
+
         {(legal?.tosLink || legal?.privacyPolicyLink) && (
           <PrivacyPolicyCheckboxes legal={legal} onChange={setTosAndPolicyAccepted} />
         )}
         {/* show chooser if both methods are allowed */}
         {loginSettings && loginSettings.allowLocalAuthentication && loginSettings.passkeysType == PasskeysType.ALLOWED && (
           <>
-            <p className="ztdl-p mt-4 mb-6 block text-left">
+            <Typography variant="body2" textAlign="left">
               <Translated i18nKey="selectMethod" namespace="register" />
-            </p>
+            </Typography>
 
-            <div className="pb-4">
-              <AuthenticationMethodRadio selected={selected} selectionChanged={setSelected} />
-            </div>
+            <AuthenticationMethodRadio selected={selected} selectionChanged={setSelected} />
           </>
         )}
         {!loginSettings?.allowLocalAuthentication &&
           loginSettings?.passkeysType !== PasskeysType.ALLOWED &&
           (!loginSettings?.allowExternalIdp || !idpCount) && (
-            <div className="py-4">
-              <Alert type={AlertType.INFO}>
-                <Translated i18nKey="noMethodAvailableWarning" namespace="register" />
-              </Alert>
-            </div>
+            <Alert type={AlertType.INFO}>
+              <Translated i18nKey="noMethodAvailableWarning" namespace="register" />
+            </Alert>
           )}
 
-        {error && (
-          <div className="py-4">
-            <Alert>{error}</Alert>
-          </div>
-        )}
+        {error && <Alert>{error}</Alert>}
 
-        <div className="mt-8 flex w-full flex-row items-center justify-between">
+        <LandingFormActions sx={{ justifyContent: "space-between" }}>
           <BackButton data-testid="back-button" />
           <Button
             type="submit"
             variant={ButtonVariants.Primary}
             disabled={loading || !canSubmit}
-            onClick={handleSubmit((values) => {
-              const usePasswordToContinue: boolean =
-                loginSettings?.allowLocalAuthentication && loginSettings?.passkeysType == PasskeysType.ALLOWED
-                  ? !(selected === methods[0]) // choose selection if both available
-                  : !!loginSettings?.allowLocalAuthentication; // if password is chosen
-              // set password as default if only password is allowed
-              return submitAndContinue(values, usePasswordToContinue);
-            })}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />}
-            <Translated i18nKey="submit" namespace="register" />
+            {loading && <Spinner />} <Translated i18nKey="submit" namespace="register" />
           </Button>
-        </div>
-      </form>
+        </LandingFormActions>
+      </LandingFormPanel>
     </>
   );
 }

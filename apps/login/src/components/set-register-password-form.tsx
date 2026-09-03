@@ -3,6 +3,8 @@
 import { lowerCaseValidator, numberValidator, symbolValidator, upperCaseValidator } from "@/helpers/validators";
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { registerUser } from "@/lib/server/register";
+import { LandingFormActions, LandingFormField, LandingFormPanel } from "@bwp-web/components";
+import { Box } from "@mui/material";
 import { PasswordComplexitySettings } from "@zitadel/proto/zitadel/settings/v2/password_settings_pb";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -12,7 +14,6 @@ import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
-import { TextInput } from "./input";
 import { PasswordComplexity } from "./password-complexity";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
@@ -97,49 +98,73 @@ export function SetRegisterPasswordForm({
     (passwordComplexitySettings.requiresSymbol ? hasSymbol : true) &&
     hasMinLength;
 
+  // LandingFormField spreads onto MUI TextField, whose `ref` targets the root
+  // div — not the <input>. Registering the whole field would hand RHF that
+  // div's ref, so formState.isValid would never flip true and the submit
+  // button would stay permanently disabled. Split the ref out and hand it to
+  // TextField's `inputRef` instead, which does target the <input> (see
+  // username-form.tsx / password-form.tsx for the same pattern).
+  const { ref: passwordRef, ...passwordField } = register("password", {
+    required: t("password.required.password"),
+  });
+  const { ref: confirmPasswordRef, ...confirmPasswordField } = register("confirmPassword", {
+    required: t("password.required.confirmPassword"),
+  });
+
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className="mb-4 grid grid-cols-1 gap-4 pt-4">
-          <input
-            type="text"
-            name="username"
-            autoComplete="username"
-            value={email ?? ""}
-            readOnly
-            tabIndex={-1}
-            aria-hidden="true"
-            className="sr-only"
-          />
-          <div className="">
-            <TextInput
-              type="password"
-              autoComplete="new-password"
-              autoFocus
-              required
-              {...register("password", {
-                required: t("password.required.password"),
-              })}
-              label={t("password.labels.password")}
-              error={errors.password?.message as string}
-              data-testid="password-text-input"
-            />
-          </div>
-          <div className="">
-            <TextInput
-              type="password"
-              required
-              autoComplete="new-password"
-              {...register("confirmPassword", {
-                required: t("password.required.confirmPassword"),
-              })}
-              label={t("password.labels.confirmPassword")}
-              error={errors.confirmPassword?.message as string}
-              data-testid="password-confirm-text-input"
-            />
-          </div>
-        </div>
+      <LandingFormPanel onSubmit={handleSubmit(submitRegister)}>
+        {/* Hidden but present in the DOM (not type="hidden", which some
+            browsers ignore for autocomplete purposes): lets password managers
+            associate the new password below with this username, matching the
+            username field the user filled in earlier in the flow. */}
+        <Box
+          component="input"
+          type="text"
+          name="username"
+          autoComplete="username"
+          value={email ?? ""}
+          readOnly
+          tabIndex={-1}
+          aria-hidden="true"
+          sx={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        />
+
+        <LandingFormField
+          type="password"
+          autoComplete="new-password"
+          autoFocus
+          required
+          {...passwordField}
+          inputRef={passwordRef}
+          label={t("password.labels.password")}
+          error={Boolean(errors.password)}
+          helperText={(errors.password?.message as string) || " "}
+          slotProps={{ htmlInput: { "data-testid": "password-text-input" } }}
+        />
+
+        <LandingFormField
+          type="password"
+          required
+          autoComplete="new-password"
+          {...confirmPasswordField}
+          inputRef={confirmPasswordRef}
+          label={t("password.labels.confirmPassword")}
+          error={Boolean(errors.confirmPassword)}
+          helperText={(errors.confirmPassword?.message as string) || " "}
+          slotProps={{ htmlInput: { "data-testid": "password-confirm-text-input" } }}
+        />
 
         {passwordComplexitySettings && (
           <PasswordComplexity
@@ -151,19 +176,18 @@ export function SetRegisterPasswordForm({
 
         {error && <Alert>{error}</Alert>}
 
-        <div className="mt-8 flex w-full flex-row items-center justify-between">
+        <LandingFormActions sx={{ justifyContent: "space-between" }}>
           <BackButton data-testid="back-button" />
           <Button
             type="submit"
             variant={ButtonVariants.Primary}
             disabled={loading || !policyIsValid || !formState.isValid || watchPassword !== watchConfirmPassword}
-            onClick={handleSubmit(submitRegister)}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="password.submit" namespace="register" />
+            {loading && <Spinner />} <Translated i18nKey="password.submit" namespace="register" />
           </Button>
-        </div>
-      </form>
+        </LandingFormActions>
+      </LandingFormPanel>
     </>
   );
 }

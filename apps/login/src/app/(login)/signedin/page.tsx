@@ -1,6 +1,8 @@
 import { Alert, AlertType } from "@/components/alert";
 import { Button, ButtonVariants } from "@/components/button";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { resolveRedirectUri } from "@/lib/client";
@@ -8,7 +10,8 @@ import { getMostRecentCookieWithLoginname, getSessionCookieById } from "@/lib/co
 import { completeDeviceAuthorization } from "@/lib/server/device";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getLoginSettings, getSession, ServiceConfig } from "@/lib/zitadel";
+import { getLoginSettings, getSession, ServiceConfig } from "@/lib/zitadel";
+import { Box, Stack } from "@mui/material";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -41,8 +44,6 @@ export default async function Page(props: { searchParams: Promise<any> }) {
 
   const { loginName, requestId, organization, sessionId } = searchParams;
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
-
   // complete device authorization flow if device requestId is present
   if (requestId && requestId.startsWith("device_")) {
     const cookie = sessionId
@@ -58,18 +59,18 @@ export default async function Page(props: { searchParams: Promise<any> }) {
         sessionToken: cookie.token,
       }).catch((err) => {
         return (
-          <DynamicTheme branding={branding}>
-            <div className="flex flex-col space-y-4">
-              <h1>
-                <Translated i18nKey="error.title" namespace="signedin" />
-              </h1>
-              <p className="ztdl-p mb-6 block">
-                <Translated i18nKey="error.description" namespace="signedin" />
-              </p>
-              <Alert>{err.message}</Alert>
-            </div>
-            <div className="w-full"></div>
-          </DynamicTheme>
+          <LandingShell
+            actions={
+              <>
+                <LanguageSwitcher />
+                <ThemeSwitch />
+              </>
+            }
+            title={<Translated i18nKey="error.title" namespace="signedin" />}
+            subtitle={<Translated i18nKey="error.description" namespace="signedin" />}
+          >
+            <Alert>{err.message}</Alert>
+          </LandingShell>
         );
       });
     }
@@ -92,42 +93,39 @@ export default async function Page(props: { searchParams: Promise<any> }) {
   const isSamePage = redirectUri?.startsWith("/signedin") ?? false;
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="signedin" data={{ user: sessionFactors?.factors?.user?.displayName }} />
-        </h1>
-        <p className="ztdl-p mb-6 block">
-          <Translated i18nKey="description" namespace="signedin" />
-        </p>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="signedin" data={{ user: sessionFactors?.factors?.user?.displayName }} />}
+      subtitle={<Translated i18nKey="description" namespace="signedin" />}
+    >
+      <UserAvatar
+        loginName={loginName ?? sessionFactors?.factors?.user?.loginName}
+        displayName={sessionFactors?.factors?.user?.displayName ?? loginName}
+        showDropdown={!(requestId && requestId.startsWith("device_"))}
+        searchParams={searchParams}
+      />
 
-        <UserAvatar
-          loginName={loginName ?? sessionFactors?.factors?.user?.loginName}
-          displayName={sessionFactors?.factors?.user?.displayName ?? loginName}
-          showDropdown={!(requestId && requestId.startsWith("device_"))}
-          searchParams={searchParams}
-        />
-      </div>
+      {requestId && requestId.startsWith("device_") && (
+        <Alert type={AlertType.INFO}>
+          You can now close this window and return to the device where you started the authorization process to continue.
+        </Alert>
+      )}
 
-      <div className="w-full">
-        {requestId && requestId.startsWith("device_") && (
-          <Alert type={AlertType.INFO}>
-            You can now close this window and return to the device where you started the authorization process to continue.
-          </Alert>
-        )}
-
-        {redirectUri && !isSamePage && (
-          <div className="mt-8 flex w-full flex-row items-center">
-            <span className="flex-grow"></span>
-
-            <Link href={redirectUri}>
-              <Button type="submit" className="self-end" variant={ButtonVariants.Primary}>
-                <Translated i18nKey="continue" namespace="signedin" />
-              </Button>
-            </Link>
-          </div>
-        )}
-      </div>
-    </DynamicTheme>
+      {redirectUri && !isSamePage && (
+        <Stack direction="row" alignItems="center" width="100%" mt={4}>
+          <Box flexGrow={1} />
+          <Link href={redirectUri}>
+            <Button type="submit" variant={ButtonVariants.Primary}>
+              <Translated i18nKey="continue" namespace="signedin" />
+            </Button>
+          </Link>
+        </Stack>
+      )}
+    </LandingShell>
   );
 }

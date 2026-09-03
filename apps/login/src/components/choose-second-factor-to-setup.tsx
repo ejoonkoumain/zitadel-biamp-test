@@ -2,6 +2,7 @@
 
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { skipMFAAndContinueWithNextUrl } from "@/lib/server/session";
+import { Box, Stack } from "@mui/material";
 import { LoginSettings, SecondFactorType } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { AuthenticationMethodType } from "@zitadel/proto/zitadel/user/v2/user_service_pb";
 import { useRouter } from "next/navigation";
@@ -9,6 +10,7 @@ import { useState } from "react";
 import { Alert } from "./alert";
 import { EMAIL, SMS, TOTP, U2F } from "./auth-methods";
 import { AutoSubmitForm } from "./auto-submit-form";
+import { Card } from "./card";
 import { Translated } from "./translated";
 
 type Props = {
@@ -63,7 +65,7 @@ export function ChooseSecondFactorToSetup({
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <div className="grid w-full grid-cols-1 gap-5 pt-4">
+      <Stack width="100%" gap={2.5} pt={2}>
         {loginSettings.secondFactors.map((factor) => {
           switch (factor) {
             case SecondFactorType.OTP:
@@ -80,31 +82,44 @@ export function ChooseSecondFactorToSetup({
               return null;
           }
         })}
-      </div>
+      </Stack>
       {!force && (
-        <button
-          className="hover:text-primary-light-500 dark:hover:text-primary-dark-500 text-sm transition-all"
-          onClick={async () => {
-            const skipResponse = await skipMFAAndContinueWithNextUrl({
-              userId,
-              loginName,
-              sessionId,
-              organization,
-              requestId,
-            });
+        <Box width="100%" maxWidth={441}>
+          <Card>
+            <Box
+              component="button"
+              type="button"
+              onClick={async () => {
+                const skipResponse = await skipMFAAndContinueWithNextUrl({
+                  userId,
+                  loginName,
+                  sessionId,
+                  organization,
+                  requestId,
+                });
 
-            handleServerActionResponse(skipResponse, router, setSamlData, setError);
-          }}
-          type="button"
-          data-testid="reset-button"
-        >
-          <Translated i18nKey="set.skip" namespace="mfa" />
-        </button>
+                handleServerActionResponse(skipResponse, router, setSamlData, setError);
+              }}
+              data-testid="reset-button"
+              sx={{
+                typography: "body2",
+                color: "info.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
+            >
+              <Translated i18nKey="set.skip" namespace="mfa" />
+            </Box>
+          </Card>
+        </Box>
       )}
       {error && (
-        <div className="py-4" data-testid="error">
+        <Box py={2} data-testid="error">
           <Alert>{error}</Alert>
-        </div>
+        </Box>
       )}
     </>
   );

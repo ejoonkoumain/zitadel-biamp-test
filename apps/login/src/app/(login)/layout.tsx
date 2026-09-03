@@ -1,6 +1,5 @@
-import "@/styles/globals.scss";
-
 import { LanguageProvider } from "@/components/language-provider";
+import { LanguagesProvider } from "@/components/languages-provider";
 import { Providers } from "@/components/providers";
 import { Skeleton } from "@/components/skeleton";
 import { LANGS, getLanguage } from "@/lib/i18n";
@@ -25,7 +24,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   try {
     const settings = await getAllowedLanguages({ serviceConfig });
     if (settings.allowedLanguages?.length) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- `languages` will be passed to LandingShell in Task 17; keep the fetch alive until then.
       languages = settings.allowedLanguages
         .filter((code) => LANGS.find((l) => l.code === code))
         .map((code) => getLanguage(code));
@@ -41,7 +39,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           <Tooltip.Provider>
             <Suspense fallback={<Skeleton />}>
-              <LanguageProvider>{children}</LanguageProvider>
+              <LanguagesProvider languages={languages}>
+                <LanguageProvider>{children}</LanguageProvider>
+              </LanguagesProvider>
             </Suspense>
           </Tooltip.Provider>
         </Providers>

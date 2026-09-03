@@ -1,13 +1,14 @@
 import { Alert } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { LoginPasskey } from "@/components/login-passkey";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getSessionCookieById } from "@/lib/cookies";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getDefaultOrg, getSession } from "@/lib/zitadel";
-import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
+import { getSession } from "@/lib/zitadel";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -24,15 +25,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   const _headers = await headers();
   const { serviceConfig } = getServiceConfig(_headers);
-
-  let defaultOrganization;
-  if (!organization) {
-    const org: Organization | null = await getDefaultOrg({ serviceConfig });
-
-    if (org) {
-      defaultOrganization = org.id;
-    }
-  }
 
   let sessionFactors = sessionId ? await loadSessionById(sessionId, organization) : undefined;
 
@@ -57,51 +49,43 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     });
   }
 
-  const branding = await getBrandingSettings({
-    serviceConfig,
-    organization: organization ?? sessionFactors?.factors?.user?.organizationId ?? defaultOrganization,
-  });
-
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="verify.title" namespace="passkey" />
-        </h1>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="verify.title" namespace="passkey" />}
+      subtitle={<Translated i18nKey="verify.description" namespace="passkey" />}
+    >
+      {sessionFactors ? (
+        <UserAvatar
+          loginName={loginName ?? sessionFactors.factors?.user?.loginName}
+          displayName={sessionFactors.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      ) : loginName ? (
+        <UserAvatar loginName={loginName} displayName={loginName} showDropdown searchParams={searchParams} />
+      ) : null}
 
-        <p className="ztdl-p mb-6 block">
-          <Translated i18nKey="verify.description" namespace="passkey" />
-        </p>
+      {!(loginName || sessionId) && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-        {sessionFactors ? (
-          <UserAvatar
-            loginName={loginName ?? sessionFactors.factors?.user?.loginName}
-            displayName={sessionFactors.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        ) : loginName ? (
-          <UserAvatar loginName={loginName} displayName={loginName} showDropdown searchParams={searchParams}></UserAvatar>
-        ) : null}
-      </div>
-
-      <div className="w-full">
-        {!(loginName || sessionId) && (
-          <Alert>
-            <Translated i18nKey="unknownContext" namespace="error" />
-          </Alert>
-        )}
-
-        {(loginName || sessionId) && (
-          <LoginPasskey
-            loginName={loginName}
-            sessionId={sessionId}
-            requestId={requestId}
-            altPassword={altPassword === "true"}
-            organization={organization}
-          />
-        )}
-      </div>
-    </DynamicTheme>
+      {(loginName || sessionId) && (
+        <LoginPasskey
+          loginName={loginName}
+          sessionId={sessionId}
+          requestId={requestId}
+          altPassword={altPassword === "true"}
+          organization={organization}
+        />
+      )}
+    </LandingShell>
   );
 }

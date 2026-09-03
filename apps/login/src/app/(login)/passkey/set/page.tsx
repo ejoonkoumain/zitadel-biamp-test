@@ -1,11 +1,14 @@
 import { Alert, AlertType } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { RegisterPasskey } from "@/components/register-passkey";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getUserByID } from "@/lib/zitadel";
+import { getUserByID } from "@/lib/zitadel";
+import { Link } from "@mui/material";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
 import { HumanUser, User } from "@zitadel/proto/zitadel/user/v2/user_pb";
 import { Metadata } from "next";
@@ -37,8 +40,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     });
   }
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
-
   let user: User | undefined;
   let displayName: string | undefined;
   if (userId) {
@@ -51,68 +52,63 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="set.title" namespace="passkey" />
-        </h1>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="set.title" namespace="passkey" />}
+      subtitle={<Translated i18nKey="set.description" namespace="passkey" />}
+    >
+      {session ? (
+        <UserAvatar
+          loginName={loginName ?? session.factors?.user?.loginName}
+          displayName={session.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      ) : user ? (
+        <UserAvatar
+          loginName={user?.preferredLoginName}
+          displayName={displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      ) : null}
 
-        <p className="ztdl-p mb-6 block">
-          <Translated i18nKey="set.description" namespace="passkey" />
-        </p>
+      <Alert type={AlertType.INFO}>
+        <>
+          <Translated i18nKey="set.info.description" namespace="passkey" />
+          <Link
+            href="https://zitadel.com/docs/guides/manage/user/reg-create-user#with-passwordless"
+            target="_blank"
+            sx={{ color: "info.main" }}
+          >
+            <Translated i18nKey="set.info.link" namespace="passkey" />
+          </Link>
+        </>
+      </Alert>
 
-        {session ? (
-          <UserAvatar
-            loginName={loginName ?? session.factors?.user?.loginName}
-            displayName={session.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        ) : user ? (
-          <UserAvatar
-            loginName={user?.preferredLoginName}
-            displayName={displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        ) : null}
-      </div>
-
-      <div className="w-full">
-        <Alert type={AlertType.INFO}>
-          <span>
-            <Translated i18nKey="set.info.description" namespace="passkey" />
-            <a
-              className="text-primary-light-500 hover:text-primary-light-300 dark:text-primary-dark-500 hover:dark:text-primary-dark-300"
-              target="_blank"
-              href="https://zitadel.com/docs/guides/manage/user/reg-create-user#with-passwordless"
-            >
-              <Translated i18nKey="set.info.link" namespace="passkey" />
-            </a>
-          </span>
+      {!session && !user && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
         </Alert>
+      )}
 
-        {!session && !user && (
-          <div className="py-4">
-            <Alert>
-              <Translated i18nKey="unknownContext" namespace="error" />
-            </Alert>
-          </div>
-        )}
-
-        {(session?.id || userId) && (
-          <RegisterPasskey
-            sessionId={session?.id}
-            userId={userId}
-            isPrompt={!!prompt}
-            organization={organization}
-            requestId={requestId}
-            code={code}
-            codeId={codeId}
-            loginName={loginName ?? session?.factors?.user?.loginName ?? user?.preferredLoginName}
-          />
-        )}
-      </div>
-    </DynamicTheme>
+      {(session?.id || userId) && (
+        <RegisterPasskey
+          sessionId={session?.id}
+          userId={userId}
+          isPrompt={!!prompt}
+          organization={organization}
+          requestId={requestId}
+          code={code}
+          codeId={codeId}
+          loginName={loginName ?? session?.factors?.user?.loginName ?? user?.preferredLoginName}
+        />
+      )}
+    </LandingShell>
   );
 }

@@ -1,7 +1,8 @@
 import { Alert } from "@/components/alert";
 import { BackButton } from "@/components/back-button";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { Card } from "@/components/card";
 import { ChooseAuthenticatorToSetup } from "@/components/choose-authenticator-to-setup";
-import { DynamicTheme } from "@/components/dynamic-theme";
 import { SignInWithIdp } from "@/components/sign-in-with-idp";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
@@ -11,14 +12,16 @@ import { loadMostRecentSession } from "@/lib/session";
 import { checkUserVerification } from "@/lib/verify-helper";
 import {
   getActiveIdentityProviders,
-  getBrandingSettings,
   getLoginSettings,
   getSession,
   getUserByID,
   listAuthenticationMethodTypes,
 } from "@/lib/zitadel";
+import { Stack, Typography } from "@mui/material";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
 // import { getLocale } from "next-intl/server";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -88,13 +91,20 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   if (!sessionWithData || !sessionWithData.factors || !sessionWithData.factors.user) {
     return (
-      <Alert>
-        <Translated i18nKey="unknownContext" namespace="error" />
-      </Alert>
+      <LandingShell
+        actions={
+          <>
+            <LanguageSwitcher />
+            <ThemeSwitch />
+          </>
+        }
+      >
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      </LandingShell>
     );
   }
-
-  const branding = await getBrandingSettings({ serviceConfig, organization: sessionWithData.factors.user?.organizationId });
 
   const loginSettings = await getLoginSettings({
     serviceConfig,
@@ -145,56 +155,56 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="authenticator" />
-        </h1>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="authenticator" />}
+      subtitle={<Translated i18nKey="description" namespace="authenticator" />}
+    >
+      <UserAvatar
+        loginName={sessionWithData.factors?.user?.loginName}
+        displayName={sessionWithData.factors?.user?.displayName}
+        showDropdown
+        searchParams={searchParams}
+      />
 
-        <p className="ztdl-p">
-          <Translated i18nKey="description" namespace="authenticator" />
-        </p>
+      {loginSettings && (
+        <ChooseAuthenticatorToSetup
+          authMethods={sessionWithData.authMethods}
+          loginSettings={loginSettings}
+          params={params}
+        />
+      )}
 
-        <UserAvatar
-          loginName={sessionWithData.factors?.user?.loginName}
-          displayName={sessionWithData.factors?.user?.displayName}
-          showDropdown
-          searchParams={searchParams}
-        ></UserAvatar>
-      </div>
+      {loginSettings?.allowExternalIdp && !!identityProviders.length && (
+        <>
+          {/* Sits directly on LandingShell's fixed dark background, not inside a
+              panel — text.secondary (not text.primary/default) is the token
+              that stays legible in both light and dark mode here, matching
+              sign-in-with-idp.tsx's identical choice for its own label. */}
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            <Translated i18nKey="linkWithIDP" namespace="authenticator" />
+          </Typography>
 
-      <div className="w-full">
-        {loginSettings && (
-          <ChooseAuthenticatorToSetup
-            authMethods={sessionWithData.authMethods}
-            loginSettings={loginSettings}
-            params={params}
-          ></ChooseAuthenticatorToSetup>
-        )}
+          <SignInWithIdp
+            showLabel={false}
+            identityProviders={identityProviders}
+            requestId={requestId}
+            organization={sessionWithData.factors?.user?.organizationId}
+            sessionId={sessionWithData.id} // tell the callback function to link the IDP
+          />
+        </>
+      )}
 
-        {loginSettings?.allowExternalIdp && !!identityProviders.length && (
-          <>
-            <div className="flex flex-col py-3">
-              <p className="ztdl-p text-center">
-                <Translated i18nKey="linkWithIDP" namespace="authenticator" />
-              </p>
-            </div>
-
-            <SignInWithIdp
-              showLabel={false}
-              identityProviders={identityProviders}
-              requestId={requestId}
-              organization={sessionWithData.factors?.user?.organizationId}
-              sessionId={sessionWithData.id} // tell the callback function to link the IDP
-            ></SignInWithIdp>
-          </>
-        )}
-
-        <div className="mt-8 flex w-full flex-row items-center">
+      <Card>
+        <Stack direction="row" alignItems="center" width="100%">
           <BackButton />
-          <span className="flex-grow"></span>
-        </div>
-      </div>
-    </DynamicTheme>
+        </Stack>
+      </Card>
+    </LandingShell>
   );
 }

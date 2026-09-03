@@ -31,8 +31,172 @@
 | 11 `spinner.tsx` | ✅ |
 | 12 `avatar.tsx` | ✅ |
 | 13 `checkbox.tsx` + verify `back-button.tsx` | ✅ |
-| 14–17 Phase 4 route sweep | ⬜ next |
-| 18–19 Phase 5 teardown | ⬜ |
+| 14 `/password` + password-complexity | ✅ |
+| 15 `/mfa` `/u2f` `/passkey` + 10 components | ✅ |
+| 16 IdP routes | ✅ |
+| 17 remaining routes + ~30 components | ✅ |
+| 18 Delete both ZITADEL theme layers | ✅ |
+| 19 Remove Tailwind and SCSS | ✅ |
+
+## ✅ MIGRATION COMPLETE — 2026-09-03
+
+Final verified state:
+
+| Check | Result |
+| --- | --- |
+| Unit tests | **847 passing / 62 files** |
+| `tsc --noEmit` | **48** — two *below* the starting baseline |
+| ESLint | **clean** (`--max-warnings=0`) |
+| Prettier | **clean** |
+| `nx build` | **succeeds** |
+| All 12 routes | **HTTP 200** |
+| Tailwind / SCSS / `sass` deps | **none remain** |
+| Files deleted | **27** |
+
+Test count 894 → 847. The −47 is fully accounted for: −38 from `lib/theme.test.ts`
+(deleted with the system it tested) and the rest from replacing class-string and
+vacuous assertions with behavioural ones across the primitives. Coverage that
+was genuinely live and lost was restored deliberately and proved to fail with
+the bug reintroduced.
+
+### Two plan errors that execution caught
+
+- **`card.tsx` was NOT orphaned.** This plan claimed `dynamic-theme.tsx` was
+  its only consumer and it could be deleted. Wrong — it has **7** live
+  consumers (`mfa/page.tsx`, `mfa/set/page.tsx`, `authenticator/set/page.tsx`,
+  `register-passkey.tsx`, `choose-second-factor-to-setup.tsx`,
+  `login-passkey.tsx`, `register-u2f.tsx`). Task 18 verified before deleting
+  and correctly kept it. `logo.tsx` *was* genuinely orphaned by
+  `dynamic-theme.tsx`'s removal and was deleted after iterating.
+- **`accounts/page.tsx`'s unused `defaultOrganization` was ours, not
+  pre-existing.** At `HEAD` it fed `getBrandingSettings`; Task 17 correctly
+  removed that call but left the variable — which also left a **pointless
+  `getDefaultOrg` API round-trip on every page load**. Removed along with its
+  now-dead `getDefaultOrg` and `Organization` imports.
+
+### Known follow-ups, deliberately left
+
+1. **`getBrandingSettings` in `src/lib/zitadel.ts` is now dead code** — zero
+   callers. Left because it lives in a shared API-helper module that was not in
+   any task's scope; worth a deliberate decision rather than an unprompted edit.
+2. **A Prettier `--write` pass touched ~48 files** beyond the task file lists,
+   purely whitespace and import order. It was needed to make
+   `prettier --check` pass, which was itself the proof that the
+   `prettier-plugin-tailwindcss` removal had been handled. Worth a diff skim.
+3. **A React hydration warning on `/loginname`** —
+   `style={{caret-color:"transparent"}}`, from MUI `TextField`'s autofill
+   detection. Cosmetic and non-fatal; inherent to MUI, unrelated to the
+   teardown.
+4. **The acceptance suite has never been run.** It is the only real proof that
+   all 80 `data-testid`s survived. It does **not** need the human admin
+   password — its specs provision their own users and setup uses a
+   service-account PAT — but it does create throwaway users on the local
+   instance, so it needs the user's go-ahead. **This is the most valuable
+   remaining verification.**
+
+**Phase 4 complete, verified 2026-09-03:** 885 tests / 63 files, `tsc` at
+**48** (two errors *below* baseline — `set-password-form.test.tsx` and
+`set-register-password-form.test.tsx` each had a pre-existing `8n` BigInt
+literal error fixed in passing), `nx build` clean, and **all 12 routes return
+200**.
+
+`@/lib/theme` importers are down to exactly the two that Task 18 deletes:
+`background-wrapper.tsx` and `dynamic-theme.tsx`. (`skeleton-card.tsx` matches
+a grep for it but only in a *comment*.) That gate is met — Task 18 is unblocked.
+
+Static gate residuals, all accounted for and intentional: the five primitives
+(`button`, `card`, `checkbox`, `input`, `spinner`) match only on `className`
+**prop forwarding**, which is deliberate and test-guarded; `theme-provider.tsx`
+is a false positive (`value={{ dark: "dark" }}` is a next-themes config key);
+`layout-providers.tsx` and `lib/themeUtils.tsx` are Task 18 deletions.
+
+### Three defects Phase 4 surfaced, none visible to any DOM assertion
+
+1. **Every `(login)` route returned HTTP 500.** `skeleton.tsx`'s new shimmer
+   used an `sx` **theme callback** for `backgroundImage`, but `Skeleton` is the
+   layout's `Suspense` fallback and therefore renders from a Server Component —
+   React cannot serialise a function across that boundary
+   ("Functions cannot be passed directly to Client Components"). **The
+   production build passed**, because it only fails at runtime; Task 17's agent
+   reasonably but wrongly diagnosed it as a stale dev cache. Fixed by
+   referencing MUI's CSS custom properties by name
+   (`var(--mui-palette-background-paper)`) instead — a plain string, still
+   scheme-reactive because `biampTheme` enables `cssVariables`.
+2. **The same bug, latent, in two more files.** `state-badge.tsx` (reachable via
+   `auth-methods.tsx`) and `app-avatar.tsx` also used `sx` callbacks without
+   `"use client"`. It escaped the smoke test only because no auth methods are
+   configured on this instance — it would have fired for any real user with a
+   second factor. Both marked `"use client"`.
+3. **The `LanguageSwitcher` rendered as a blank white box.** Its text was
+   correctly `"English"` in `common.white`, but `biampTheme` fills an outlined
+   input's root with `background.paper` — white in light mode. Computed style
+   confirmed it: text `rgb(255,255,255)` on root `rgb(255,255,255)`. Fixed with
+   an explicit `backgroundColor: "transparent"`, since the switcher sits on the
+   shell's dark background and must stay unfilled.
+
+Defects 1 and 3 are both *runtime/visual* failures that passed tests, typecheck
+**and** the production build. Together with Task 15's full-width alerts and
+Task 16's invisible label, four of this migration's defects were findable only
+by loading the page and looking at it.
+
+### Task 15 closed out 2026-09-03
+
+Its agent was stopped mid-verification on 2026-09-02, owing four items. All
+four are now resolved:
+
+1. **Test accounting:** nothing was owed. The only two co-located tests in its
+   scope — `login-otp.test.tsx` and `login-passkey.test.tsx` — contain **zero**
+   class assertions, so they needed no rewrite and shed no coverage.
+2. **WebAuthn untouched:** verified by counting the security-relevant calls
+   (`navigator.credentials`, `coerceToArrayBuffer`, `coerceToBase64Url`) in
+   each file against `HEAD` — `login-passkey.tsx` 9/9, `register-passkey.tsx`
+   8/8, `register-u2f.tsx` 8/8. Only markup moved.
+3. **Screenshots** taken for all three routes.
+4. **`authentication-method-radio.tsx`** rebuilt on MUI; renders correctly.
+
+**And the screenshots caught a real defect the DOM could not show.** On `/mfa`,
+`/u2f` and `/passkey` the `Alert`s spanned the **entire viewport width** rather
+than the design's column. Cause: `alert.tsx` sets `width: "100%"` so it fills a
+`LandingFormPanel`, but these routes render an `Alert` as a *direct child* of
+`LandingShell`, whose content `Stack` was `width="100%"` and uncapped.
+
+Fixed centrally in `landing-shell.tsx` — `maxWidth={441} px={2}` on the content
+column — rather than per route, since it would have recurred on every remaining
+route in Tasks 16–17. Guarded by a new test asserting the computed `maxWidth`,
+proved to fail when the cap is removed.
+
+### PAUSED 2026-09-02, RESUMED 2026-09-03
+
+**The working tree is clean and consistent. Nothing is half-edited.**
+Verified at the moment of pausing:
+
+- **884 tests passing / 63 files**
+- `tsc --noEmit` at the **50**-error baseline, same 11 files
+- `pnpm nx run @zitadel/login:build` succeeds
+- Task 15's whole scope is `className`-free (4 route pages incl. the `set/`
+  sub-routes, plus all 10 components)
+- **All `data-testid`s preserved** across all 22 changed files, diffed against
+  `HEAD`. Note `password-form.tsx`'s `password-text-input` now lives in
+  `slotProps={{ htmlInput: { "data-testid": ... } }}`, so a naive
+  `grep 'data-testid="'` will report it missing — it is not.
+
+**What Task 15 still owes**, because its agent was stopped during final
+verification and never reported:
+
+1. **Old-vs-new test accounting** for any test file it changed. Three Phase 3
+   primitives each silently shed real coverage; every sweep task must diff old
+   tests against new and restore anything live that lost its guard.
+2. **Screenshots** of `/mfa` and `/passkey` (unauthenticated state is fine and
+   expected — see the environment note above).
+3. Its justification for how `authentication-method-radio.tsx` was rebuilt.
+4. Confirmation that the WebAuthn logic in `login-passkey.tsx`,
+   `register-passkey.tsx` and `register-u2f.tsx` is untouched — check with
+   `git diff` on those three and confirm only markup moved.
+
+Do items 1 and 4 before treating Task 15 as complete; they are the two that
+could hide a real defect.
+
+**To resume:** finish those four items, then start Task 16.
 
 **Verified at end of Phase 3:** all 7 rewritten primitives import `@mui/material`
 and contain zero `lib/theme` and zero `clsx` references; `back-button.tsx`
@@ -53,6 +217,60 @@ shed live coverage, it was restored deliberately: `className` forwarding on
 `button` and `spinner`, and five behaviours on `input` including the
 `autoComplete` privacy default. Each restored test was proved to fail with the
 bug reintroduced.
+
+## ENVIRONMENT: the local admin password is not `Password1!`
+
+Discovered in Task 14 and confirmed directly against the API:
+
+```
+POST /v2/sessions  {"checks":{"user":{"loginName":"zitadel-admin@zitadel.localhost"},
+                               "password":{"password":"Password1!"}}}
+-> "Password is invalid (COMMAND-3M0fs)"  failedAttempts: 9
+```
+
+The human user exists and is `USER_STATE_ACTIVE` — but
+`apps/api/prod-default.yaml` defines `FirstInstance.Org.LoginClient` and
+`FirstInstance.Org.Machine` and **never sets `Org.Human.Password`**. The
+`Password1!` documented in `CONTRIBUTING.md` comes from the docker-compose
+path (`deploy/compose/docker-compose.yml`), which sets it explicitly. The local
+`nx run @zitadel/api:prod` path does not.
+
+**This predates the migration** — Task 14 proved it by restoring the original
+`password/page.tsx` and `password-form.tsx` from `git show` and reproducing the
+identical failure, then again via the real OIDC entry point. It is a
+docs/environment gap in the upstream repo, not a regression here.
+
+**Decision (2026-09-02): do not change the instance.** Phase 4 and 5 verify by
+unit tests, `tsc`, `nx build`, and direct-URL screenshots of each route's
+unauthenticated state. Routes past `/password` are not eyeballed in a browser.
+Do not try to authenticate, and do not treat the inability to as a failure of
+your task.
+
+If it is ever wanted, the non-destructive fix is a password reset with the
+existing `admin.pat` (no re-init, no DB drop):
+
+```bash
+PAT=$(cat admin.pat)
+curl -X POST http://localhost:8080/v2/users/389001525156577485/password \
+  -H "Authorization: Bearer $PAT" -H 'Content-Type: application/json' \
+  -d '{"newPassword":{"password":"Password1!","changeRequired":false}}'
+```
+
+### The acceptance suite does NOT need that password
+
+Worth knowing before Task 19 concludes anything is unverifiable.
+`apps/login/acceptance/tests/user.ts` exports `PasswordUser`,
+`PasswordUserWithOTP`, `PasswordUserWithTOTP` and `PasskeyUser` — the specs
+**provision their own users through the API** with passwords they choose. And
+`acceptance/setup/setup.sh` authenticates with a **service-account PAT**
+(`PAT_FILE`, defaulting to `./pat/zitadel-admin-sa.pat`, satisfiable with the
+repo-root `admin.pat`), never with a human password.
+
+So the full 25-spec acceptance run — the real proof that all 80 `data-testid`s
+survived — is viable regardless of the admin credential. The only cost is that
+it creates throwaway users and a service account on the local instance.
+**Confirm with the user before running it**, since the standing decision is to
+leave the instance alone.
 
 ## Ground rules — read before any task
 
@@ -178,6 +396,33 @@ Known so far:
 
 The palette is augmented too: `palette.text.sidebar` (`#E0E0E0`) and
 `palette.dividers.secondary` exist and are used by the bwp components.
+
+## COLOUR RULE: `LandingShell`'s background never changes with the theme
+
+Found in Task 16, where it had made the "or sign in with" label **invisible in
+light mode**. Caught only by comparing a light-mode screenshot against a
+dark-mode one — no DOM assertion could see it.
+
+`LandingShell` paints a **fixed dark background image**, identical in light and
+dark mode. But `palette.text.primary` flips: near-black in light, white in
+dark. So any text placed directly on the shell background using `text.primary`
+disappears in light mode.
+
+Two zones, two rules:
+
+| Where the content sits | Use |
+| --- | --- |
+| **Directly on the shell background** | Mode-independent light values only: `common.white`, `text.sidebar` (#E0E0E0), `text.secondary` (#878787) |
+| **Inside a `LandingFormPanel`** | Normal theme colours — `text.primary` is correct here, because the panel's own background flips with the scheme (`grey[100]` light / `grey[700]` dark) |
+
+`LandingShell` itself already complies: its hero uses `common.white` and its
+subtitle `text.sidebar`. The trap is content a route passes as `children`
+*outside* a panel — section labels, standalone helper text, divider captions.
+
+**Check every route you sweep in BOTH modes.** Toggle with `next-themes`, or
+screenshot with Playwright's `colorScheme: "light"` and `"dark"`. `mfa/page.tsx`
+and `sign-in-with-idp.tsx` are the reviewed precedents for a section label:
+both use `text.secondary`.
 
 **Dark mode is owned by `next-themes`, and it already works.** Established in
 Task 2: `biampTheme`'s `colorSchemeSelector: 'class'` makes MUI emit its
@@ -2256,6 +2501,46 @@ Phases 1–3 leave the app functional and Biamp-themed, with stale Tailwind
 4. **Never remove, rename or relocate a `data-testid`.**
 5. Any remaining `@/lib/theme` or `@/lib/themeUtils` import is deleted along
    with the props it fed.
+
+### MANDATORY GATE after each sweep task: the Tailwind-off diagnostic
+
+Added 2026-09-03 at the user's suggestion, and it is a better check than the
+`className` grep below because it catches misses the grep cannot see — a class
+held in a variable, a template string, or a `clsx()` call.
+
+The problem it solves: while Tailwind is still loaded, a **missed** class keeps
+styling correctly, so a sweep looks complete when it is not. The failure only
+surfaces in Task 19, when everything disappears at once and it is hard to
+attribute.
+
+So after each sweep task, verify the swept files do not depend on Tailwind:
+
+```bash
+# 1. static: no residue in the files you swept
+grep -rn 'className\|clsx\|ztdl\|dark:' <your swept files> | grep -v '.test.tsx'
+# must be empty (a `className?:` prop declaration in a primitive is fine)
+
+# 2. dynamic: temporarily drop the stylesheet and confirm nothing moves
+cp "src/app/(login)/layout.tsx" /tmp/layout.bak
+sed -i '' 's|^import "@/styles/globals.scss";|// TEMP|' "src/app/(login)/layout.tsx"
+# screenshot your routes, compare against the same shots with it enabled
+cp /tmp/layout.bak "src/app/(login)/layout.tsx"   # ALWAYS restore
+```
+
+**Verified 2026-09-03 for everything swept through Task 15**: both checks
+clean. `/loginname` and `/mfa` measured identically with and without the
+stylesheet (`fontSize=36px weight=600 align=center Montserrat`) and were
+visually pixel-equivalent.
+
+Why the stylesheet does not interfere with migrated code, for the record:
+Tailwind v4 emits its base rules into a real CSS `@layer base`, and layered
+styles lose to unlayered ones — Emotion injects unlayered, so MUI always wins.
+The one genuine collision was Tailwind's preflight `border-style: solid`, and
+the `:where([class*="Mui"])` shim already neutralises it.
+
+**Do not delete Tailwind early.** 73 components and 24 `ztdl-p` usages still
+depend on it going into Task 16; removing it now would leave them unstyled and
+make it impossible to tell a new defect from a not-yet-swept one.
 
 **After each task in this phase, run:**
 

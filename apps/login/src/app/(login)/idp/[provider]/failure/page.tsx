@@ -1,10 +1,12 @@
 import { Alert, AlertType } from "@/components/alert";
+import { LandingShell } from "@/components/bwp/landing-shell";
 import { ChooseAuthenticatorToLogin } from "@/components/choose-authenticator-to-login";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getServiceConfig } from "@/lib/service-url";
-import { getBrandingSettings, getLoginSettings, getUserByID, listAuthenticationMethodTypes } from "@/lib/zitadel";
+import { getLoginSettings, getUserByID, listAuthenticationMethodTypes } from "@/lib/zitadel";
 import { HumanUser, User } from "@zitadel/proto/zitadel/user/v2/user_pb";
 import { AuthenticationMethodType } from "@zitadel/proto/zitadel/user/v2/user_service_pb";
 import { headers } from "next/headers";
@@ -19,8 +21,6 @@ export default async function Page(props: {
 
   const _headers = await headers();
   const { serviceConfig } = getServiceConfig(_headers);
-
-  const branding = await getBrandingSettings({ serviceConfig, organization });
 
   const loginSettings = await getLoginSettings({ serviceConfig, organization });
 
@@ -56,36 +56,32 @@ export default async function Page(props: {
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="loginError.title" namespace="idp" />
-        </h1>
-      </div>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="loginError.title" namespace="idp" />}
+    >
+      <Alert type={AlertType.ALERT}>
+        <Translated i18nKey="loginError.description" namespace="idp" />
+      </Alert>
 
-      <div className="w-full">
-        <Alert type={AlertType.ALERT}>
-          <Translated i18nKey="loginError.description" namespace="idp" />
-        </Alert>
+      {userId && authMethods.length && (
+        <>
+          {user && human && (
+            <UserAvatar loginName={user.preferredLoginName} displayName={human?.profile?.displayName} showDropdown={false} />
+          )}
 
-        {userId && authMethods.length && (
-          <>
-            {user && human && (
-              <UserAvatar
-                loginName={user.preferredLoginName}
-                displayName={human?.profile?.displayName}
-                showDropdown={false}
-              />
-            )}
-
-            <ChooseAuthenticatorToLogin
-              authMethods={authMethods}
-              loginSettings={loginSettings}
-              params={params}
-            ></ChooseAuthenticatorToLogin>
-          </>
-        )}
-      </div>
-    </DynamicTheme>
+          <ChooseAuthenticatorToLogin
+            authMethods={authMethods}
+            loginSettings={loginSettings}
+            params={params}
+          ></ChooseAuthenticatorToLogin>
+        </>
+      )}
+    </LandingShell>
   );
 }

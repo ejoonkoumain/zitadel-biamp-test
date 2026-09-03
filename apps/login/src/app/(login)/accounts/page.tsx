@@ -1,12 +1,14 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SessionsList } from "@/components/sessions-list";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { getAllSessions } from "@/lib/cookies";
 import { getServiceConfig } from "@/lib/service-url";
-import { getBrandingSettings, getDefaultOrg, listSessions, ServiceConfig } from "@/lib/zitadel";
+import { listSessions, ServiceConfig } from "@/lib/zitadel";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { Box, Paper, Stack, Typography } from "@mui/material";
 import { create } from "@zitadel/client";
-import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
 import { Session, SessionSchema } from "@zitadel/proto/zitadel/session/v2/session_pb";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -78,17 +80,7 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   const _headers = await headers();
   const { serviceConfig } = getServiceConfig(_headers);
 
-  let defaultOrganization;
-  if (!organization) {
-    const org: Organization | null = await getDefaultOrg({ serviceConfig });
-    if (org) {
-      defaultOrganization = org.id;
-    }
-  }
-
   let sessions = await loadSessions({ serviceConfig, organization });
-
-  const branding = await getBrandingSettings({ serviceConfig, organization: organization ?? defaultOrganization });
 
   const params = new URLSearchParams();
 
@@ -105,31 +97,56 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="accounts" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="description" namespace="accounts" />
-        </p>
-      </div>
-
-      <div className="w-full">
-        <div className="flex w-full flex-col space-y-2">
-          <SessionsList sessions={sessions} requestId={requestId} />
-          <Link href={`/loginname?` + params}>
-            <div className="flex flex-row items-center rounded-md px-4 py-3 transition-all hover:bg-black/10 dark:hover:bg-white/10">
-              <div className="mr-4 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-black/5 dark:bg-white/5">
-                <UserPlusIcon className="h-5 w-5" />
-              </div>
-              <span className="text-sm">
-                <Translated i18nKey="addAnother" namespace="accounts" />
-              </span>
-            </div>
-          </Link>
-        </div>
-      </div>
-    </DynamicTheme>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="accounts" />}
+      subtitle={<Translated i18nKey="description" namespace="accounts" />}
+    >
+      <Stack width="100%" gap={1}>
+        <SessionsList sessions={sessions} requestId={requestId} />
+        <Paper
+          component={Link}
+          href={`/loginname?` + params}
+          elevation={0}
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            borderRadius: 2,
+            px: 2,
+            py: 1.5,
+            textDecoration: "none",
+            color: "inherit",
+            transition: "background-color 0.2s",
+            "&:hover": { bgcolor: "action.selected" },
+          }}
+        >
+          <Box
+            sx={{
+              mr: 2,
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 32,
+              width: 32,
+              borderRadius: "50%",
+              bgcolor: "action.hover",
+              flexShrink: 0,
+            }}
+          >
+            <UserPlusIcon style={{ height: 20, width: 20 }} />
+          </Box>
+          <Typography variant="body2">
+            <Translated i18nKey="addAnother" namespace="accounts" />
+          </Typography>
+        </Paper>
+      </Stack>
+    </LandingShell>
   );
 }

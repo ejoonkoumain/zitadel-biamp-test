@@ -1,13 +1,17 @@
 import { Alert } from "@/components/alert";
 import { BackButton } from "@/components/back-button";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { Card } from "@/components/card";
 import { ChooseSecondFactor } from "@/components/choose-second-factor";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getSessionCookieById } from "@/lib/cookies";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getSession, listAuthenticationMethodTypes } from "@/lib/zitadel";
+import { getSession, listAuthenticationMethodTypes } from "@/lib/zitadel";
+import { Box, Stack } from "@mui/material";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -67,54 +71,53 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     });
   }
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
-
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="verify.title" namespace="mfa" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="verify.description" namespace="mfa" />
-        </p>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="verify.title" namespace="mfa" />}
+      subtitle={<Translated i18nKey="verify.description" namespace="mfa" />}
+    >
+      {sessionFactors && (
+        <UserAvatar
+          loginName={loginName ?? sessionFactors.factors?.user?.loginName}
+          displayName={sessionFactors.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      )}
 
-        {sessionFactors && (
-          <UserAvatar
-            loginName={loginName ?? sessionFactors.factors?.user?.loginName}
-            displayName={sessionFactors.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        )}
-      </div>
+      {!(loginName || sessionId) && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-      <div className="w-full">
-        {!(loginName || sessionId) && (
-          <Alert>
-            <Translated i18nKey="unknownContext" namespace="error" />
-          </Alert>
-        )}
+      {sessionFactors ? (
+        <ChooseSecondFactor
+          loginName={loginName}
+          sessionId={sessionId}
+          requestId={requestId}
+          organization={organization}
+          userMethods={sessionFactors.authMethods ?? []}
+        />
+      ) : (
+        <Alert>
+          <Translated i18nKey="verify.noResults" namespace="mfa" />
+        </Alert>
+      )}
 
-        {sessionFactors ? (
-          <ChooseSecondFactor
-            loginName={loginName}
-            sessionId={sessionId}
-            requestId={requestId}
-            organization={organization}
-            userMethods={sessionFactors.authMethods ?? []}
-          ></ChooseSecondFactor>
-        ) : (
-          <Alert>
-            <Translated i18nKey="verify.noResults" namespace="mfa" />
-          </Alert>
-        )}
-
-        <div className="mt-8 flex w-full flex-row items-center">
-          <BackButton />
-          <span className="flex-grow"></span>
-        </div>
-      </div>
-    </DynamicTheme>
+      <Box width="100%" maxWidth={441}>
+        <Card>
+          <Stack direction="row" alignItems="center" width="100%">
+            <BackButton />
+          </Stack>
+        </Card>
+      </Box>
+    </LandingShell>
   );
 }

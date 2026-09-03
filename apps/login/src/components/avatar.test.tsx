@@ -1,7 +1,7 @@
-import { cleanup } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
 import { getColorHash } from "@/helpers/colors";
 import { renderWithTheme } from "@/test-utils/render-with-theme";
+import { cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { Avatar, getInitials } from "./avatar";
 
 afterEach(cleanup);
@@ -72,9 +72,7 @@ describe("Avatar Component", () => {
 
     it("renders with each size without crashing", () => {
       (["small", "base", "large"] as const).forEach((size) => {
-        const { getByText, unmount } = renderWithTheme(
-          <Avatar size={size} name="Test User" loginName="test@example.com" />,
-        );
+        const { getByText, unmount } = renderWithTheme(<Avatar size={size} name="Test User" loginName="test@example.com" />);
         expect(getByText("TU")).toBeInTheDocument();
         unmount();
       });

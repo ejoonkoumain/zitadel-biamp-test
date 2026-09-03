@@ -1,6 +1,6 @@
+import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { Alert, AlertType } from "./alert";
 
 // This setup has no automatic RTL cleanup (test-setup.ts only imports jest-dom,

@@ -4,6 +4,7 @@ import { coerceToArrayBuffer, coerceToBase64Url } from "@/helpers/base64";
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { sendPasskey } from "@/lib/server/passkeys";
 import { updateOrCreateSession } from "@/lib/server/session";
+import { Box, Stack } from "@mui/material";
 import { create, JsonObject } from "@zitadel/client";
 import { RequestChallengesSchema, UserVerificationRequirement } from "@zitadel/proto/zitadel/session/v2/challenge_pb";
 import { Checks } from "@zitadel/proto/zitadel/session/v2/session_service_pb";
@@ -14,6 +15,7 @@ import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
+import { Card } from "./card";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
 
@@ -186,83 +188,84 @@ export function LoginPasskey({ loginName, sessionId, requestId, altPassword, org
   }
 
   return (
-    <div className="w-full">
+    <Box width="100%">
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
       {error && (
-        <div className="py-4">
+        <Box py={2}>
           <Alert>{error}</Alert>
-        </div>
+        </Box>
       )}
-      <div className="mt-8 flex w-full flex-row items-center">
-        {altPassword ? (
+      <Card>
+        <Stack direction="row" alignItems="center" width="100%">
+          {altPassword ? (
+            <Button
+              type="button"
+              variant={ButtonVariants.Secondary}
+              onClick={() => {
+                const params = new URLSearchParams();
+
+                if (loginName) {
+                  params.append("loginName", loginName);
+                }
+
+                if (sessionId) {
+                  params.append("sessionId", sessionId);
+                }
+
+                if (requestId) {
+                  params.append("requestId", requestId);
+                }
+
+                if (organization) {
+                  params.append("organization", organization);
+                }
+
+                return router.push(
+                  "/password?" + params, // alt is set because password is requested as alternative auth method, so passkey prompt can be escaped
+                );
+              }}
+              data-testid="password-button"
+            >
+              <Translated i18nKey="verify.usePassword" namespace="passkey" />
+            </Button>
+          ) : (
+            <BackButton />
+          )}
+
+          <Box flexGrow={1} />
           <Button
-            type="button"
-            variant={ButtonVariants.Secondary}
-            onClick={() => {
-              const params = new URLSearchParams();
-
-              if (loginName) {
-                params.append("loginName", loginName);
-              }
-
-              if (sessionId) {
-                params.append("sessionId", sessionId);
-              }
-
-              if (requestId) {
-                params.append("requestId", requestId);
-              }
-
-              if (organization) {
-                params.append("organization", organization);
-              }
-
-              return router.push(
-                "/password?" + params, // alt is set because password is requested as alternative auth method, so passkey prompt can be escaped
-              );
-            }}
-            data-testid="password-button"
-          >
-            <Translated i18nKey="verify.usePassword" namespace="passkey" />
-          </Button>
-        ) : (
-          <BackButton />
-        )}
-
-        <span className="flex-grow"></span>
-        <Button
-          type="submit"
-          className="self-end"
-          variant={ButtonVariants.Primary}
-          disabled={loading}
-          onClick={async () => {
-            const response = await updateOrCreateSessionForChallenge().finally(() => {
-              setLoading(false);
-            });
-
-            const pK = response?.challenges?.webAuthN?.publicKeyCredentialRequestOptions?.publicKey;
-
-            if (!pK) {
-              setError(t("verify.errors.couldNotRequestChallenge"));
-              return;
-            }
-
-            setLoading(true);
-
-            return submitLoginAndContinue(pK)
-              .catch((error) => {
-                setError(error instanceof Error ? error.message : String(error));
-                return;
-              })
-              .finally(() => {
+            type="submit"
+            variant={ButtonVariants.Primary}
+            disabled={loading}
+            onClick={async () => {
+              const response = await updateOrCreateSessionForChallenge().finally(() => {
                 setLoading(false);
               });
-          }}
-          data-testid="submit-button"
-        >
-          {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="verify.submit" namespace="passkey" />
-        </Button>
-      </div>
-    </div>
+
+              const pK = response?.challenges?.webAuthN?.publicKeyCredentialRequestOptions?.publicKey;
+
+              if (!pK) {
+                setError(t("verify.errors.couldNotRequestChallenge"));
+                return;
+              }
+
+              setLoading(true);
+
+              return submitLoginAndContinue(pK)
+                .catch((error) => {
+                  setError(error instanceof Error ? error.message : String(error));
+                  return;
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            }}
+            data-testid="submit-button"
+          >
+            {loading && <Spinner />} <Translated i18nKey="verify.submit" namespace="passkey" />
+          </Button>
+        </Stack>
+      </Card>
+    </Box>
   );
 }

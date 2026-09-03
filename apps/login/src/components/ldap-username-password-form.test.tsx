@@ -1,4 +1,5 @@
-import { cleanup, render } from "@testing-library/react";
+import { renderWithTheme } from "@/test-utils/render-with-theme";
+import { cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { LDAPUsernamePasswordForm } from "./ldap-username-password-form";
 
@@ -17,8 +18,12 @@ vi.mock("@/lib/server/idp", () => ({
 describe("LDAPUsernamePasswordForm", () => {
   afterEach(cleanup);
 
+  // Now rendered via LandingFormPanel/LandingFormField (@bwp-web/components),
+  // which read the MUI theme — renderWithTheme replaces the bare `render()`
+  // this test used before that conversion (see username-form.test.tsx for
+  // the same requirement on an equivalent form).
   test("should autofocus the username input on mount", () => {
-    const { getByTestId } = render(<LDAPUsernamePasswordForm idpId="idp-1" link={false} />);
+    const { getByTestId } = renderWithTheme(<LDAPUsernamePasswordForm idpId="idp-1" link={false} />);
     expect(getByTestId("username-text-input")).toHaveFocus();
   });
 });

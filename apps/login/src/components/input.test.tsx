@@ -1,6 +1,6 @@
+import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { cleanup, fireEvent } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { renderWithTheme } from "@/test-utils/render-with-theme";
 import { TextInput } from "./input";
 
 // No automatic RTL cleanup in this setup (test-setup.ts only imports jest-dom,
@@ -46,9 +46,7 @@ describe("TextInput", () => {
   });
 
   it("shows a success message with a check icon, styled distinctly from an error", () => {
-    const { getByText, container } = renderWithTheme(
-      <TextInput label="Email" success="Looks good" />,
-    );
+    const { getByText, container } = renderWithTheme(<TextInput label="Email" success="Looks good" />);
 
     expect(getByText("Looks good")).toBeInTheDocument();
     expect(container.querySelector("svg")).toBeInTheDocument();
@@ -70,9 +68,7 @@ describe("TextInput", () => {
   });
 
   it("passes through native input attributes like autoComplete and disabled", () => {
-    const { getByTestId } = renderWithTheme(
-      <TextInput label="Email" data-testid="f" autoComplete="username" disabled />,
-    );
+    const { getByTestId } = renderWithTheme(<TextInput label="Email" data-testid="f" autoComplete="username" disabled />);
     const input = getByTestId("f") as HTMLInputElement;
 
     expect(input.autocomplete).toBe("username");
@@ -86,9 +82,7 @@ describe("TextInput", () => {
   });
 
   it("renders the default value", () => {
-    const { getByTestId } = renderWithTheme(
-      <TextInput label="Email" data-testid="f" defaultValue="seed@acme.com" />,
-    );
+    const { getByTestId } = renderWithTheme(<TextInput label="Email" data-testid="f" defaultValue="seed@acme.com" />);
 
     expect((getByTestId("f") as HTMLInputElement).value).toBe("seed@acme.com");
   });

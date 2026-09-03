@@ -2,12 +2,14 @@
 
 import { coerceToArrayBuffer, coerceToBase64Url } from "@/helpers/base64";
 import { registerPasskeyLink, verifyPasskeyRegistration } from "@/lib/server/passkeys";
+import { Box, Stack } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Alert } from "./alert";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
+import { Card } from "./card";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
 
@@ -205,40 +207,41 @@ export function RegisterPasskey({
   }, [code, submitRegisterAndContinue]);
 
   return (
-    <form className="w-full">
+    <Box component="form" width="100%">
       {error && (
-        <div className="py-4">
+        <Box py={2}>
           <Alert>{error}</Alert>
-        </div>
+        </Box>
       )}
 
-      <div className="mt-8 flex w-full flex-row items-center">
-        {isPrompt ? (
-          <Button
-            type="button"
-            variant={ButtonVariants.Secondary}
-            onClick={() => {
-              continueAndLogin();
-            }}
-          >
-            <Translated i18nKey="set.skip" namespace="passkey" />
-          </Button>
-        ) : (
-          <BackButton />
-        )}
+      <Card>
+        <Stack direction="row" alignItems="center" width="100%">
+          {isPrompt ? (
+            <Button
+              type="button"
+              variant={ButtonVariants.Secondary}
+              onClick={() => {
+                continueAndLogin();
+              }}
+            >
+              <Translated i18nKey="set.skip" namespace="passkey" />
+            </Button>
+          ) : (
+            <BackButton />
+          )}
 
-        <span className="flex-grow"></span>
-        <Button
-          type="submit"
-          className="self-end"
-          variant={ButtonVariants.Primary}
-          disabled={loading || !formState.isValid}
-          onClick={handleSubmit(submitRegisterAndContinue)}
-          data-testid="submit-button"
-        >
-          {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="set.submit" namespace="passkey" />
-        </Button>
-      </div>
-    </form>
+          <Box flexGrow={1} />
+          <Button
+            type="submit"
+            variant={ButtonVariants.Primary}
+            disabled={loading || !formState.isValid}
+            onClick={handleSubmit(submitRegisterAndContinue)}
+            data-testid="submit-button"
+          >
+            {loading && <Spinner />} <Translated i18nKey="set.submit" namespace="passkey" />
+          </Button>
+        </Stack>
+      </Card>
+    </Box>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { clearSession } from "@/lib/server/session";
+import { Stack } from "@mui/material";
 import { timestampDate } from "@zitadel/client";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
 import { useTranslations } from "next-intl";
@@ -72,7 +73,7 @@ export function SessionsClearList({ sessions, logoutHint, postLogoutRedirectUri,
   }, [logoutHint, clearHintedSession]);
 
   return sessions ? (
-    <div className="flex flex-col space-y-2">
+    <Stack gap={1}>
       {list
         .filter((session) => session?.factors?.user?.loginName)
         // sort by change date descending
@@ -102,7 +103,7 @@ export function SessionsClearList({ sessions, logoutHint, postLogoutRedirectUri,
           <Translated i18nKey="noResults" namespace="logout" />
         </Alert>
       )}
-    </div>
+    </Stack>
   ) : (
     <Alert>
       <Translated i18nKey="noResults" namespace="logout" />

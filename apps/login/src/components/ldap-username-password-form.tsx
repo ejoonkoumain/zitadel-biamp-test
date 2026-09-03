@@ -1,6 +1,8 @@
 "use client";
 
 import { createNewSessionForLDAP } from "@/lib/server/idp";
+import { LandingFormActions, LandingFormField, LandingFormPanel } from "@bwp-web/components";
+import { Box } from "@mui/material";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,7 +10,6 @@ import { useForm } from "react-hook-form";
 import { Alert } from "./alert";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
-import { TextInput } from "./input";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
 
@@ -81,51 +82,50 @@ export function LDAPUsernamePasswordForm({
     }
   }
 
+  const { ref: loginNameRef, ...loginNameField } = register("loginName", { required: t("required.username") });
+  const { ref: passwordRef, ...passwordField } = register("password", { required: t("required.password") });
+
   return (
-    <form className="w-full space-y-4">
-      <TextInput
+    <LandingFormPanel onSubmit={handleSubmit(submitUsernamePassword)}>
+      <LandingFormField
+        label={t("labels.username")}
         type="text"
         autoComplete="username"
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck={false}
         autoFocus
-        {...register("loginName", { required: t("required.username") })}
-        label={t("labels.username")}
-        data-testid="username-text-input"
+        {...loginNameField}
+        inputRef={loginNameRef}
+        slotProps={{ htmlInput: { "data-testid": "username-text-input" } }}
       />
 
-      <div className={`${error && "animate-shake transform-gpu"}`}>
-        <TextInput
-          type="password"
-          autoComplete="password"
-          {...register("password", { required: t("required.password") })}
-          label={t("labels.password")}
-          data-testid="password-text-input"
-        />
-      </div>
+      <LandingFormField
+        label={t("labels.password")}
+        type="password"
+        autoComplete="password"
+        {...passwordField}
+        inputRef={passwordRef}
+        slotProps={{ htmlInput: { "data-testid": "password-text-input" } }}
+      />
 
       {error && (
-        <div className="py-4" data-testid="error">
+        <Box data-testid="error">
           <Alert>{error}</Alert>
-        </div>
+        </Box>
       )}
 
-      <div className="mt-8 flex w-full flex-row items-center">
+      <LandingFormActions sx={{ justifyContent: "space-between" }}>
         <BackButton data-testid="back-button" />
-        <span className="flex-grow"></span>
         <Button
           type="submit"
-          className="self-end"
           variant={ButtonVariants.Primary}
           disabled={loading || !formState.isValid}
-          onClick={handleSubmit(submitUsernamePassword)}
           data-testid="submit-button"
         >
-          {loading && <Spinner className="mr-2 h-5 w-5" />}
-          <Translated i18nKey="submit" namespace="ldap" />
+          {loading && <Spinner />} <Translated i18nKey="submit" namespace="ldap" />
         </Button>
-      </div>
-    </form>
+      </LandingFormActions>
+    </LandingFormPanel>
   );
 }

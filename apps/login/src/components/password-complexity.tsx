@@ -1,5 +1,6 @@
 import { Translated } from "@/components/translated";
 import { lowerCaseValidator, numberValidator, symbolValidator, upperCaseValidator } from "@/helpers/validators";
+import { Box, Stack, Typography } from "@mui/material";
 import { PasswordComplexitySettings } from "@zitadel/proto/zitadel/settings/v2/password_settings_pb";
 import { useTranslations } from "next-intl";
 
@@ -9,44 +10,52 @@ type Props = {
   equals: boolean;
 };
 
+// The icons use `stroke="currentColor"`, so wrapping them in a `Typography`
+// with a palette `color` (instead of a Tailwind `text-*` class) recolors them
+// via ordinary CSS color inheritance.
 function CheckIcon({ title }: { title: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className="las la-check mr-2 h-6 w-6 flex-none text-lg text-green-500 dark:text-green-500"
-      role="img"
-    >
-      <title>{title}</title>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-    </svg>
+    <Typography component="span" color="success.main" sx={{ display: "inline-flex", flexShrink: 0 }}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        width={24}
+        height={24}
+        role="img"
+      >
+        <title>{title}</title>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+    </Typography>
   );
 }
 
 function CrossIcon({ title }: { title: string }) {
   return (
-    <svg
-      className="las la-times text-warn-light-500 dark:text-warn-dark-500 mr-2 h-6 w-6 flex-none text-lg"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      role="img"
-    >
-      <title>{title}</title>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
+    <Typography component="span" color="error.main" sx={{ display: "inline-flex", flexShrink: 0 }}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        width={24}
+        height={24}
+        role="img"
+      >
+        <title>{title}</title>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </Typography>
   );
 }
 
 function renderIcon(matched: boolean, t: ReturnType<typeof useTranslations>) {
   return matched ? <CheckIcon title={t("complexity.matches")} /> : <CrossIcon title={t("complexity.doesNotMatch")} />;
 }
-const desc = "text-14px leading-4 text-input-light-label dark:text-input-dark-label";
 
 export function PasswordComplexity({ passwordComplexitySettings, password, equals }: Props) {
   const t = useTranslations("password");
@@ -57,57 +66,57 @@ export function PasswordComplexity({ passwordComplexitySettings, password, equal
   const hasLowercase = lowerCaseValidator(password);
 
   return (
-    <div className="mb-4 grid grid-cols-2 gap-x-8 gap-y-2">
+    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: 4, rowGap: 1, mb: 2 }}>
       {passwordComplexitySettings.minLength != undefined ? (
-        <div className="flex flex-row items-center" data-testid="length-check">
+        <Stack direction="row" alignItems="center" gap={1} data-testid="length-check">
           {renderIcon(hasMinLength, t)}
-          <span className={desc}>
+          <Typography variant="body2" color="text.secondary">
             <Translated
               i18nKey="complexity.length"
               namespace="password"
               data={{ minLength: passwordComplexitySettings.minLength.toString() }}
             />
-          </span>
-        </div>
+          </Typography>
+        </Stack>
       ) : null}
       {passwordComplexitySettings.requiresSymbol && (
-        <div className="flex flex-row items-center" data-testid="symbol-check">
+        <Stack direction="row" alignItems="center" gap={1} data-testid="symbol-check">
           {renderIcon(hasSymbol, t)}
-          <span className={desc}>
+          <Typography variant="body2" color="text.secondary">
             <Translated i18nKey="complexity.hasSymbol" namespace="password" />
-          </span>
-        </div>
+          </Typography>
+        </Stack>
       )}
       {passwordComplexitySettings.requiresNumber && (
-        <div className="flex flex-row items-center" data-testid="number-check">
+        <Stack direction="row" alignItems="center" gap={1} data-testid="number-check">
           {renderIcon(hasNumber, t)}
-          <span className={desc}>
+          <Typography variant="body2" color="text.secondary">
             <Translated i18nKey="complexity.hasNumber" namespace="password" />
-          </span>
-        </div>
+          </Typography>
+        </Stack>
       )}
       {passwordComplexitySettings.requiresUppercase && (
-        <div className="flex flex-row items-center" data-testid="uppercase-check">
+        <Stack direction="row" alignItems="center" gap={1} data-testid="uppercase-check">
           {renderIcon(hasUppercase, t)}
-          <span className={desc}>
+          <Typography variant="body2" color="text.secondary">
             <Translated i18nKey="complexity.hasUppercase" namespace="password" />
-          </span>
-        </div>
+          </Typography>
+        </Stack>
       )}
       {passwordComplexitySettings.requiresLowercase && (
-        <div className="flex flex-row items-center" data-testid="lowercase-check">
+        <Stack direction="row" alignItems="center" gap={1} data-testid="lowercase-check">
           {renderIcon(hasLowercase, t)}
-          <span className={desc}>
+          <Typography variant="body2" color="text.secondary">
             <Translated i18nKey="complexity.hasLowercase" namespace="password" />
-          </span>
-        </div>
+          </Typography>
+        </Stack>
       )}
-      <div className="flex flex-row items-center" data-testid="equal-check">
+      <Stack direction="row" alignItems="center" gap={1} data-testid="equal-check">
         {renderIcon(equals, t)}
-        <span className={desc}>
+        <Typography variant="body2" color="text.secondary">
           <Translated i18nKey="complexity.equals" namespace="password" />
-        </span>
-      </div>
-    </div>
+        </Typography>
+      </Stack>
+    </Box>
   );
 }

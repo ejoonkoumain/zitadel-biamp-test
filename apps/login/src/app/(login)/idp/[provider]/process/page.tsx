@@ -1,9 +1,7 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
 import { IdpProcessHandler } from "@/components/idp-process-handler";
-import { getServiceConfig } from "@/lib/service-url";
-import { getBrandingSettings, getDefaultOrg } from "@/lib/zitadel";
-import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
-import { headers } from "next/headers";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 
 /**
  * This page handles the initial IDP callback with the single-use token.
@@ -25,21 +23,15 @@ export default async function ProcessPage(props: {
     throw new Error("Missing required IDP callback parameters");
   }
 
-  const _headers = await headers();
-  const { serviceConfig } = getServiceConfig(_headers);
-
-  let defaultOrganization;
-  if (!organization) {
-    const org: Organization | null = await getDefaultOrg({ serviceConfig });
-    if (org) {
-      defaultOrganization = org.id;
-    }
-  }
-
-  const branding = await getBrandingSettings({ serviceConfig, organization: organization ?? defaultOrganization });
-
   return (
-    <DynamicTheme branding={branding}>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+    >
       <IdpProcessHandler
         provider={provider}
         id={id}
@@ -51,6 +43,6 @@ export default async function ProcessPage(props: {
         linkFingerprint={linkFingerprint}
         postErrorRedirectUrl={postErrorRedirectUrl}
       />
-    </DynamicTheme>
+    </LandingShell>
   );
 }

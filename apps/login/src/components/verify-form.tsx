@@ -4,6 +4,7 @@ import { Alert, AlertType } from "@/components/alert";
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { UNKNOWN_USER_ID } from "@/lib/constants";
 import { resendVerification, sendVerification } from "@/lib/server/verify";
+import { Box, Stack } from "@mui/material";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -124,33 +125,42 @@ export function VerifyForm({ userId, loginName, organization, requestId, code, i
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
       {codeSent && (
-        <div className="w-full py-4">
+        <Box width="100%" py={2}>
           <Alert type={AlertType.INFO}>
             <Translated i18nKey="verify.codeSent" namespace="verify" />
           </Alert>
-        </div>
+        </Box>
       )}
-      <form className="w-full">
+      <Box component="form" width="100%">
         <Alert type={AlertType.INFO}>
-          <div className="flex flex-row">
-            <span className="mr-auto flex-1 text-left">
+          <Stack direction="row" alignItems="center" width="100%">
+            <Box component="span" sx={{ mr: "auto", flex: 1, textAlign: "left" }}>
               <Translated i18nKey="verify.noCodeReceived" namespace="verify" />
-            </span>
-            <button
+            </Box>
+            <Box
+              component="button"
               aria-label="Resend Code"
               disabled={loading}
               type="button"
-              className="text-primary-light-500 hover:text-primary-light-400 dark:text-primary-dark-500 hover:dark:text-primary-dark-400 ml-4 cursor-pointer disabled:cursor-default disabled:text-gray-400 dark:disabled:text-gray-700"
               onClick={() => {
                 resendCode();
               }}
               data-testid="resend-button"
+              sx={{
+                ml: 2,
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                color: "info.main",
+                "&:disabled": { cursor: "default", color: "action.disabled" },
+              }}
             >
               <Translated i18nKey="verify.resendCode" namespace="verify" />
-            </button>
-          </div>
+            </Box>
+          </Stack>
         </Alert>
-        <div className="mt-4">
+        <Box mt={2}>
           <TextInput
             type="text"
             autoComplete="one-time-code"
@@ -159,30 +169,29 @@ export function VerifyForm({ userId, loginName, organization, requestId, code, i
             label={t("verify.labels.code")}
             data-testid="code-text-input"
           />
-        </div>
+        </Box>
 
         {error && (
-          <div className="py-4" data-testid="error">
+          <Box py={2} data-testid="error">
             <Alert>{error}</Alert>
-          </div>
+          </Box>
         )}
 
-        <div className="mt-8 flex w-full flex-row items-center">
+        <Stack direction="row" alignItems="center" width="100%" mt={4}>
           <BackButton />
-          <span className="flex-grow"></span>
+          <Box flexGrow={1} />
           <Button
             type="submit"
-            className="self-end"
             variant={ButtonVariants.Primary}
             disabled={loading || !formState.isValid}
             onClick={handleSubmit(fcn)}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />}
+            {loading && <Spinner />}
             <Translated i18nKey="verify.submit" namespace="verify" />
           </Button>
-        </div>
-      </form>
+        </Stack>
+      </Box>
     </>
   );
 }

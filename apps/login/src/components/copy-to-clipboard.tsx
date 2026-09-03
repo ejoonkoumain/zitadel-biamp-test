@@ -1,6 +1,7 @@
 "use client";
 
 import { ClipboardDocumentCheckIcon, ClipboardIcon } from "@heroicons/react/20/solid";
+import { Box, IconButton } from "@mui/material";
 import copy from "copy-to-clipboard";
 import { useEffect, useState } from "react";
 
@@ -20,15 +21,21 @@ export function CopyToClipboard({ value }: Props) {
   }, [copied, value]);
 
   return (
-    <div className="flex flex-row items-center px-2">
-      <button
+    <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", px: 1 }}>
+      <IconButton
         id="tooltip-ctc"
         type="button"
-        className="text-primary-light-500 dark:text-primary-dark-500"
+        variant="none"
+        size="small"
+        sx={{ color: "info.main" }}
         onClick={() => setCopied(true)}
       >
-        {!copied ? <ClipboardIcon className="h-5 w-5" /> : <ClipboardDocumentCheckIcon className="h-5 w-5" />}
-      </button>
-    </div>
+        {!copied ? (
+          <ClipboardIcon style={{ width: 20, height: 20 }} />
+        ) : (
+          <ClipboardDocumentCheckIcon style={{ width: 20, height: 20 }} />
+        )}
+      </IconButton>
+    </Box>
   );
 }

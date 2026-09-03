@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "@mui/material";
 import { forwardRef, useId } from "react";
 import { Translated } from "../translated";
 import { BaseButton, SignInWithIdentityProviderProps } from "./base-button";
@@ -13,7 +14,7 @@ export const SignInWithZitadel = forwardRef<HTMLButtonElement, SignInWithIdentit
 
     return (
       <BaseButton {...restProps} ref={ref}>
-        <div className="flex h-12 w-12 items-center justify-center">
+        <Box sx={{ display: "flex", height: 48, width: 48, alignItems: "center", justifyContent: "center" }}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width={24}
@@ -175,11 +176,13 @@ export const SignInWithZitadel = forwardRef<HTMLButtonElement, SignInWithIdentit
               </linearGradient>
             </defs>
           </svg>
-        </div>
+        </Box>
         {children ? (
           children
         ) : (
-          <span className="ml-4">{name ? name : <Translated i18nKey="signInWithZitadel" namespace="idp" />}</span>
+          <Box component="span" sx={{ ml: 2 }}>
+            {name ? name : <Translated i18nKey="signInWithZitadel" namespace="idp" />}
+          </Box>
         )}
       </BaseButton>
     );

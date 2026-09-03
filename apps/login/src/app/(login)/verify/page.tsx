@@ -1,12 +1,15 @@
 import { Alert } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { VerifyForm } from "@/components/verify-form";
 import { UNKNOWN_USER_ID } from "@/lib/constants";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getLoginSettings, getUserByID, searchUsers } from "@/lib/zitadel";
+import { getLoginSettings, getUserByID, searchUsers } from "@/lib/zitadel";
+import { Box } from "@mui/material";
 import { LoginSettings } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { HumanUser, User } from "@zitadel/proto/zitadel/user/v2/user_pb";
 import { Metadata } from "next";
@@ -25,8 +28,6 @@ export default async function Page(props: { searchParams: Promise<any> }) {
 
   const _headers = await headers();
   const { serviceConfig } = getServiceConfig(_headers);
-
-  const branding = await getBrandingSettings({ serviceConfig, organization });
 
   let sessionFactors;
   let user: User | undefined;
@@ -104,58 +105,54 @@ export default async function Page(props: { searchParams: Promise<any> }) {
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="verify.title" namespace="verify" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="verify.description" namespace="verify" />
-        </p>
-
-        {sessionFactors ? (
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="verify.title" namespace="verify" />}
+      subtitle={<Translated i18nKey="verify.description" namespace="verify" />}
+    >
+      {sessionFactors ? (
+        <UserAvatar
+          loginName={loginName ?? sessionFactors.factors?.user?.loginName}
+          displayName={sessionFactors.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      ) : (
+        (user || loginName) && (
           <UserAvatar
-            loginName={loginName ?? sessionFactors.factors?.user?.loginName}
-            displayName={sessionFactors.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        ) : (
-          (user || loginName) && (
-            <UserAvatar
-              loginName={loginName ?? user?.preferredLoginName}
-              displayName={
-                !loginSettings?.ignoreUnknownUsernames
-                  ? human?.profile?.displayName
-                  : (loginName ?? user?.preferredLoginName)
-              }
-              showDropdown={false}
-            />
-          )
-        )}
-      </div>
-
-      <div className="w-full">
-        {!id && (
-          <div className="py-4">
-            <Alert>
-              <Translated i18nKey="unknownContext" namespace="error" />
-            </Alert>
-          </div>
-        )}
-
-        {id && (
-          <VerifyForm
-            loginName={loginName}
-            organization={organization}
-            userId={id}
-            code={code}
-            isInvite={invite === "true"}
-            requestId={requestId}
-            submit={autoSubmitCode}
+            loginName={loginName ?? user?.preferredLoginName}
+            displayName={
+              !loginSettings?.ignoreUnknownUsernames ? human?.profile?.displayName : (loginName ?? user?.preferredLoginName)
+            }
+            showDropdown={false}
           />
-        )}
-      </div>
-    </DynamicTheme>
+        )
+      )}
+
+      {!id && (
+        <Box py={2}>
+          <Alert>
+            <Translated i18nKey="unknownContext" namespace="error" />
+          </Alert>
+        </Box>
+      )}
+
+      {id && (
+        <VerifyForm
+          loginName={loginName}
+          organization={organization}
+          userId={id}
+          code={code}
+          isInvite={invite === "true"}
+          requestId={requestId}
+          submit={autoSubmitCode}
+        />
+      )}
+    </LandingShell>
   );
 }

@@ -18,19 +18,7 @@ export type TextInputProps = DetailedHTMLProps<InputHTMLAttributes<HTMLInputElem
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   (
-    {
-      label,
-      placeholder,
-      defaultValue,
-      suffix,
-      required = false,
-      error,
-      disabled,
-      success,
-      onChange,
-      onBlur,
-      ...props
-    },
+    { label, placeholder, defaultValue, suffix, required = false, error, disabled, success, onChange, onBlur, ...props },
     ref,
   ) => {
     // Split presentation props off so everything else — including data-* —
@@ -71,13 +59,9 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         style={style}
         slotProps={{
           htmlInput: { ...inputProps, autoComplete: props.autoComplete ?? "off" },
-          input: suffix
-            ? { endAdornment: <InputAdornment position="end">{`@${suffix}`}</InputAdornment> }
-            : undefined,
+          input: suffix ? { endAdornment: <InputAdornment position="end">{`@${suffix}`}</InputAdornment> } : undefined,
           formHelperText:
-            success && !error
-              ? { sx: { color: "success.main", display: "flex", alignItems: "center" } }
-              : undefined,
+            success && !error ? { sx: { color: "success.main", display: "flex", alignItems: "center" } } : undefined,
         }}
       />
     );

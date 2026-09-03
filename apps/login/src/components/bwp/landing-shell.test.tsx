@@ -83,4 +83,21 @@ describe("LandingShell", () => {
 
     expect(getByTestId("lang-switcher")).toBeInTheDocument();
   });
+
+  it("caps the content column at the design's panel width", () => {
+    // Regression guard. `alert.tsx` sets width: 100% so it fills a
+    // LandingFormPanel, and /mfa, /u2f and /passkey render an Alert as a direct
+    // child of the shell. Without this cap that rule stretched the alert
+    // edge-to-edge across the viewport on all three routes — a defect no
+    // existing assertion could see, because the DOM was entirely correct.
+    const { getByTestId } = renderWithTheme(
+      <LandingShell>
+        <p data-testid="shell-child">child</p>
+      </LandingShell>,
+    );
+    const column = getByTestId("shell-child").parentElement;
+
+    expect(column).not.toBeNull();
+    expect(getComputedStyle(column as HTMLElement).maxWidth).toBe("441px");
+  });
 });

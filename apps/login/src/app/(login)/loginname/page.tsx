@@ -1,11 +1,13 @@
 import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SignInWithIdp } from "@/components/sign-in-with-idp";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UsernameForm } from "@/components/username-form";
 import { getServiceConfig } from "@/lib/service-url";
 import { getActiveIdentityProviders, getDefaultOrg, getLoginSettings } from "@/lib/zitadel";
-import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
 import { Box } from "@mui/material";
+import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -46,6 +48,12 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   return (
     <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
       title={<Translated i18nKey="heroTitle" namespace="loginname" />}
       subtitle={<Translated i18nKey="heroSubtitle" namespace="loginname" />}
       helpText={<Translated i18nKey="helpText" namespace="loginname" />}

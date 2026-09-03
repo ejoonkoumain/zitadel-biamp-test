@@ -1,6 +1,7 @@
 "use client";
 
 import { processIDPCallback } from "@/lib/server/idp-intent";
+import { Box, Stack, Typography } from "@mui/material";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -94,19 +95,28 @@ export function IdpProcessHandler({
   }, [provider, id, token, requestId, organization, link, sessionId, linkFingerprint, postErrorRedirectUrl, router, t]);
 
   return (
-    <div className="flex items-center justify-center">
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
       {loading && (
-        <div className="flex flex-col items-center space-y-4">
-          <Spinner className="h-8 w-8" />
-          <p className="text-sm text-gray-700 dark:text-gray-300">{t("processing.message")}</p>
-        </div>
+        <Stack alignItems="center" gap={2}>
+          {/* Spinner.tsx's shared color="inherit" tracks a button label's
+              colour for the 16 in-button call sites, but this is the one
+              standalone usage — nothing ambient to inherit from. Pin it to
+              the brand colour explicitly rather than letting it fall back to
+              plain body text. */}
+          <Box sx={{ color: "primary.main" }}>
+            <Spinner />
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            {t("processing.message")}
+          </Typography>
+        </Stack>
       )}
       {error && (
-        <div className="max-w-md py-4">
+        <Box sx={{ maxWidth: 448, py: 2 }}>
           <Alert>{error}</Alert>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

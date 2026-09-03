@@ -4,6 +4,7 @@ import { coerceToArrayBuffer, coerceToBase64Url } from "@/helpers/base64";
 import { completeFlowOrGetUrl } from "@/lib/client";
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { addU2F, verifyU2F } from "@/lib/server/u2f";
+import { Box, Stack } from "@mui/material";
 import { LoginSettings } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { RegisterU2FResponse } from "@zitadel/proto/zitadel/user/v2/user_service_pb";
 import { useRouter } from "next/navigation";
@@ -12,6 +13,7 @@ import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
+import { Card } from "./card";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
 
@@ -177,29 +179,30 @@ export function RegisterU2f({ loginName, sessionId, organization, requestId, che
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
+      <Box component="form" width="100%">
         {error && (
-          <div className="py-4">
+          <Box py={2}>
             <Alert>{error}</Alert>
-          </div>
+          </Box>
         )}
 
-        <div className="mt-8 flex w-full flex-row items-center">
-          <BackButton data-testid="back-button" />
+        <Card>
+          <Stack direction="row" alignItems="center" width="100%">
+            <BackButton data-testid="back-button" />
 
-          <span className="flex-grow"></span>
-          <Button
-            type="submit"
-            className="self-end"
-            variant={ButtonVariants.Primary}
-            disabled={loading}
-            onClick={submitRegisterAndContinue}
-            data-testid="submit-button"
-          >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="set.submit" namespace="u2f" />
-          </Button>
-        </div>
-      </form>
+            <Box flexGrow={1} />
+            <Button
+              type="submit"
+              variant={ButtonVariants.Primary}
+              disabled={loading}
+              onClick={submitRegisterAndContinue}
+              data-testid="submit-button"
+            >
+              {loading && <Spinner />} <Translated i18nKey="set.submit" namespace="u2f" />
+            </Button>
+          </Stack>
+        </Card>
+      </Box>
     </>
   );
 }

@@ -1,19 +1,17 @@
 import { Alert } from "@/components/alert";
 import { BackButton } from "@/components/back-button";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { Card } from "@/components/card";
 import { ChooseSecondFactorToSetup } from "@/components/choose-second-factor-to-setup";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getSessionCookieById } from "@/lib/cookies";
 import { getServiceConfig } from "@/lib/service-url";
 import { hasVerifiedPrimaryFactor, loadMostRecentSession } from "@/lib/session";
-import {
-  getBrandingSettings,
-  getLoginSettings,
-  getSession,
-  getUserByID,
-  listAuthenticationMethodTypes,
-} from "@/lib/zitadel";
+import { getLoginSettings, getSession, getUserByID, listAuthenticationMethodTypes } from "@/lib/zitadel";
+import { Box, Stack } from "@mui/material";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
 import { SecondFactorType } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { Metadata } from "next";
@@ -85,7 +83,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     });
   }
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
   const loginSettings = await getLoginSettings({
     serviceConfig,
     organization: sessionWithData?.factors?.user?.organizationId,
@@ -129,62 +126,60 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="set.title" namespace="mfa" />
-        </h1>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="set.title" namespace="mfa" />}
+      subtitle={<Translated i18nKey="set.description" namespace="mfa" />}
+    >
+      {sessionWithData && (
+        <UserAvatar
+          loginName={loginName ?? sessionWithData.factors?.user?.loginName}
+          displayName={sessionWithData.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      )}
 
-        <p className="ztdl-p">
-          <Translated i18nKey="set.description" namespace="mfa" />
-        </p>
+      {!(loginName || sessionId) && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-        {sessionWithData && (
-          <UserAvatar
-            loginName={loginName ?? sessionWithData.factors?.user?.loginName}
-            displayName={sessionWithData.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        )}
-      </div>
+      {!valid && (
+        <Alert>
+          <Translated i18nKey="sessionExpired" namespace="error" />
+        </Alert>
+      )}
 
-      <div className="w-full">
-        <div className="flex flex-col space-y-4">
-          {!(loginName || sessionId) && (
-            <Alert>
-              <Translated i18nKey="unknownContext" namespace="error" />
-            </Alert>
-          )}
+      {valid && loginSettings && sessionWithData && sessionWithData.factors?.user?.id && (
+        <ChooseSecondFactorToSetup
+          userId={sessionWithData.factors?.user?.id}
+          loginName={loginName}
+          sessionId={sessionWithData.id}
+          requestId={requestId}
+          organization={organization}
+          loginSettings={loginSettings}
+          userMethods={sessionWithData.authMethods ?? []}
+          phoneVerified={sessionWithData.phoneVerified ?? false}
+          emailVerified={sessionWithData.emailVerified ?? false}
+          checkAfter={checkAfter === "true"}
+          force={force === "true"}
+        />
+      )}
 
-          {!valid && (
-            <Alert>
-              <Translated i18nKey="sessionExpired" namespace="error" />
-            </Alert>
-          )}
-
-          {valid && loginSettings && sessionWithData && sessionWithData.factors?.user?.id && (
-            <ChooseSecondFactorToSetup
-              userId={sessionWithData.factors?.user?.id}
-              loginName={loginName}
-              sessionId={sessionWithData.id}
-              requestId={requestId}
-              organization={organization}
-              loginSettings={loginSettings}
-              userMethods={sessionWithData.authMethods ?? []}
-              phoneVerified={sessionWithData.phoneVerified ?? false}
-              emailVerified={sessionWithData.emailVerified ?? false}
-              checkAfter={checkAfter === "true"}
-              force={force === "true"}
-            ></ChooseSecondFactorToSetup>
-          )}
-
-          <div className="mt-8 flex w-full flex-row items-center">
+      <Box width="100%" maxWidth={441}>
+        <Card>
+          <Stack direction="row" alignItems="center" width="100%">
             <BackButton />
-            <span className="flex-grow"></span>
-          </div>
-        </div>
-      </div>
-    </DynamicTheme>
+          </Stack>
+        </Card>
+      </Box>
+    </LandingShell>
   );
 }

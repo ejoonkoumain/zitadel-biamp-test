@@ -84,10 +84,17 @@ export function LandingShell({ title, subtitle, children, helpText, actions }: L
           </Stack>
         )}
 
-        <Stack alignItems="center" gap={2.5} width="100%">
+        {/* maxWidth caps the content column at the design's panel width. It is
+            load-bearing, not cosmetic: several routes render an `Alert` as a
+            direct child here, and `alert.tsx` sets `width: "100%"` so it can
+            fill a `LandingFormPanel`. Without this cap that same rule stretches
+            the alert edge-to-edge across the viewport — which is exactly how
+            /mfa, /u2f and /passkey looked before it was added. `px` keeps the
+            column off the screen edge on narrow viewports. */}
+        <Stack alignItems="center" gap={2.5} width="100%" maxWidth={441} px={2}>
           {children}
           {helpText && (
-            <Typography variant="body2" color="text.secondary" textAlign="center" px={2} maxWidth={441}>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
               {helpText}
             </Typography>
           )}

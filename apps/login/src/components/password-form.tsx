@@ -2,6 +2,8 @@
 
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { resetPassword, sendPassword } from "@/lib/server/password";
+import { LandingFormActions, LandingFormField, LandingFormPanel } from "@bwp-web/components";
+import { Box } from "@mui/material";
 import { create } from "@zitadel/client";
 import { ChecksSchema } from "@zitadel/proto/zitadel/session/v2/session_service_pb";
 import { LoginSettings } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
@@ -13,7 +15,6 @@ import { Alert, AlertType } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
 import { BackButton } from "./back-button";
 import { Button, ButtonVariants } from "./button";
-import { TextInput } from "./input";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
 
@@ -108,61 +109,74 @@ export function PasswordForm({ loginSettings, loginName, organization, defaultOr
     return router.push("/password/set?" + params);
   }
 
+  // LandingFormField spreads onto MUI TextField, whose `ref` targets the root
+  // div — not the <input>. Registering the whole field would hand RHF that
+  // div's ref, so formState.isValid would never flip true and the submit
+  // button would stay permanently disabled. Split the ref out and hand it to
+  // TextField's `inputRef` instead, which does target the <input>.
+  const { ref: passwordRef, ...passwordField } = register("password", {
+    required: t("verify.required.password"),
+  });
+
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className={`${error && "animate-shake transform-gpu"}`}>
-          <TextInput
-            type="password"
-            autoComplete="password"
-            autoFocus
-            {...register("password", { required: t("verify.required.password") })}
-            label={t("verify.labels.password")}
-            data-testid="password-text-input"
-          />
-          {!loginSettings?.hidePasswordReset && (
-            <button
-              className="hover:text-primary-light-500 dark:hover:text-primary-dark-500 text-sm transition-all"
-              onClick={() => resetPasswordAndContinue()}
-              type="button"
-              disabled={loading}
-              data-testid="reset-button"
-            >
-              <Translated i18nKey="verify.resetPassword" namespace="password" />
-            </button>
-          )}
+      <LandingFormPanel onSubmit={handleSubmit(submitPassword)}>
+        <LandingFormField
+          label={t("verify.labels.password")}
+          type="password"
+          autoComplete="current-password"
+          autoFocus
+          {...passwordField}
+          inputRef={passwordRef}
+          slotProps={{ htmlInput: { "data-testid": "password-text-input" } }}
+        />
 
-          {loginName && <input type="hidden" name="loginName" autoComplete="username" value={loginName} />}
-        </div>
-
-        {info && (
-          <div className="py-4">
-            <Alert type={AlertType.INFO}>{info}</Alert>
-          </div>
+        {!loginSettings?.hidePasswordReset && (
+          <Box
+            component="button"
+            type="button"
+            onClick={() => resetPasswordAndContinue()}
+            disabled={loading}
+            data-testid="reset-button"
+            sx={{
+              alignSelf: "flex-start",
+              typography: "body2",
+              color: "info.main",
+              background: "none",
+              border: "none",
+              p: 0,
+              cursor: "pointer",
+              "&:hover": { textDecoration: "underline" },
+              "&:disabled": { color: "action.disabled", cursor: "default" },
+            }}
+          >
+            <Translated i18nKey="verify.resetPassword" namespace="password" />
+          </Box>
         )}
+
+        {loginName && <input type="hidden" name="loginName" autoComplete="username" value={loginName} />}
+
+        {info && <Alert type={AlertType.INFO}>{info}</Alert>}
 
         {error && (
-          <div className="py-4" data-testid="error">
+          <Box data-testid="error">
             <Alert>{error}</Alert>
-          </div>
+          </Box>
         )}
 
-        <div className="mt-8 flex w-full flex-row items-center">
+        <LandingFormActions sx={{ justifyContent: "space-between" }}>
           <BackButton data-testid="back-button" />
-          <span className="flex-grow"></span>
           <Button
             type="submit"
-            className="self-end"
             variant={ButtonVariants.Primary}
             disabled={loading || !formState.isValid}
-            onClick={handleSubmit(submitPassword)}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="verify.submit" namespace="password" />
+            {loading && <Spinner />} <Translated i18nKey="verify.submit" namespace="password" />
           </Button>
-        </div>
-      </form>
+        </LandingFormActions>
+      </LandingFormPanel>
     </>
   );
 }

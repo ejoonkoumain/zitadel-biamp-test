@@ -4,6 +4,8 @@ import { handleServerActionResponse } from "@/lib/client-utils";
 import { sendLoginname } from "@/lib/server/loginname";
 import { clearSession, continueWithSession, ContinueWithSessionCommand } from "@/lib/server/session";
 import { XCircleIcon } from "@heroicons/react/24/outline";
+import { Box, Paper, Stack, Typography } from "@mui/material";
+import { Theme, useTheme } from "@mui/material/styles";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Timestamp, timestampDate } from "@zitadel/client";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
@@ -15,6 +17,39 @@ import { Alert } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
 import { Avatar } from "./avatar";
 import { Translated } from "./translated";
+
+// Row styling for a session tile, following the `Paper`/`tileSx` pattern from
+// `auth-methods.tsx`: bordered, rounded, hover raises a shadow. No
+// mode-specific overrides needed — `divider`/`action.hover` already flip
+// automatically with the theme.
+const rowSx = (theme: Theme) => ({
+  position: "relative" as const,
+  display: "flex",
+  flexDirection: "row" as const,
+  alignItems: "center",
+  width: "100%",
+  borderRadius: 2,
+  border: 1,
+  borderColor: "divider",
+  px: 2,
+  py: 1,
+  textAlign: "left" as const,
+  cursor: "pointer",
+  transition: "box-shadow 0.2s",
+  "&:hover": { boxShadow: 4 },
+  // The "clear session" icon is hover-revealed on larger screens (mirroring
+  // the old `group-hover:block sm:hidden` combo) but always visible on small
+  // screens/touch, where there is no hover.
+  "& [data-clear-icon]": {
+    opacity: 0.5,
+    transition: "opacity 0.2s",
+    [theme.breakpoints.up("sm")]: { display: "none" },
+  },
+  "&:hover [data-clear-icon]": {
+    [theme.breakpoints.up("sm")]: { display: "inline-flex" },
+  },
+  "& [data-clear-icon]:hover": { opacity: 1 },
+});
 
 export function isSessionPrimaryFactorAndLifetimeValid(session: Partial<Session>): {
   valid: boolean;
@@ -67,13 +102,17 @@ export function SessionItem({ session, reload, requestId }: { session: Session; 
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const theme = useTheme();
 
   return (
     <>
       <Tooltip.Root delayDuration={300}>
         {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
         <Tooltip.Trigger asChild>
-          <button
+          <Paper
+            component="button"
+            elevation={0}
+            sx={rowSx(theme)}
             onClick={async () => {
               if (valid && session?.factors?.user) {
                 const sessionPayload: ContinueWithSessionCommand = session;
@@ -101,44 +140,41 @@ export function SessionItem({ session, reload, requestId }: { session: Session; 
                 }
               }
             }}
-            className="group border-divider-light bg-background-light-400 dark:bg-background-dark-400 flex flex-row items-center rounded-md border px-4 py-2 transition-all hover:shadow-lg dark:hover:bg-white/10"
           >
-            <div className="pr-4">
+            <Box mr={2} display="flex" flexShrink={0}>
               <Avatar
                 size="small"
                 loginName={session.factors?.user?.loginName as string}
                 name={session.factors?.user?.displayName ?? ""}
               />
-            </div>
+            </Box>
 
-            <div className="flex flex-col items-start overflow-hidden">
-              <span className="">{session.factors?.user?.displayName}</span>
-              <span className="text-xs text-ellipsis opacity-80">{session.factors?.user?.loginName}</span>
+            <Stack alignItems="flex-start" overflow="hidden">
+              <Typography variant="body2" component="span">
+                {session.factors?.user?.displayName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" component="span" sx={{ textOverflow: "ellipsis" }}>
+                {session.factors?.user?.loginName}
+              </Typography>
               {valid ? (
-                <span className="text-xs text-ellipsis opacity-80">
+                <Typography variant="caption" color="text.secondary" component="span" sx={{ textOverflow: "ellipsis" }}>
                   <Translated i18nKey="verified" namespace="accounts" />{" "}
                   {verifiedAt && moment(timestampDate(verifiedAt)).fromNow()}
-                </span>
+                </Typography>
               ) : (
                 verifiedAt && (
-                  <span className="text-xs text-ellipsis opacity-80">
+                  <Typography variant="caption" color="text.secondary" component="span" sx={{ textOverflow: "ellipsis" }}>
                     <Translated i18nKey="expired" namespace="accounts" />{" "}
                     {session.expirationDate && moment(timestampDate(session.expirationDate)).fromNow()}
-                  </span>
+                  </Typography>
                 )
               )}
-            </div>
+            </Stack>
 
-            <span className="flex-grow"></span>
-            <div className="relative flex flex-row items-center">
-              {valid ? (
-                <div className="absolute right-6 mx-2 h-2 w-2 transform rounded-full bg-green-500 transition-all group-hover:right-6 sm:right-0"></div>
-              ) : (
-                <div className="absolute right-6 mx-2 h-2 w-2 transform rounded-full bg-red-500 transition-all group-hover:right-6 sm:right-0"></div>
-              )}
-
+            <Stack direction="row" alignItems="center" gap={1} ml="auto" pl={1}>
               <XCircleIcon
-                className="h-5 w-5 opacity-50 transition-all group-hover:block hover:opacity-100 sm:hidden"
+                data-clear-icon=""
+                style={{ height: 20, width: 20 }}
                 onClick={async (event: React.MouseEvent) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -147,17 +183,36 @@ export function SessionItem({ session, reload, requestId }: { session: Session; 
                   }
                 }}
               />
-            </div>
-          </button>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  flexShrink: 0,
+                  borderRadius: "50%",
+                  bgcolor: valid ? "success.main" : "error.main",
+                }}
+              />
+            </Stack>
+          </Paper>
         </Tooltip.Trigger>
         {valid && session.expirationDate && (
           <Tooltip.Portal>
             <Tooltip.Content
-              className="bg-background-light-500 dark:bg-background-dark-500 z-50 rounded-md border px-3 py-2 text-xs text-black shadow-xl select-none dark:border-white/20 dark:text-white"
+              style={{
+                backgroundColor: theme.palette.background.paper,
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontSize: 12,
+                boxShadow: theme.shadows[8],
+                userSelect: "none",
+                zIndex: theme.zIndex.tooltip,
+              }}
               sideOffset={5}
             >
               Expires {moment(timestampDate(session.expirationDate)).fromNow()}
-              <Tooltip.Arrow className="fill-white dark:fill-white/20" />
+              <Tooltip.Arrow style={{ fill: theme.palette.background.paper }} />
             </Tooltip.Content>
           </Tooltip.Portal>
         )}

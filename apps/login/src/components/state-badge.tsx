@@ -1,4 +1,6 @@
-import { clsx } from "clsx";
+"use client";
+
+import { Box } from "@mui/material";
 import { ReactNode } from "react";
 
 export enum BadgeState {
@@ -14,20 +16,46 @@ export type StateBadgeProps = {
   evenPadding?: boolean;
 };
 
-const getBadgeClasses = (state: BadgeState, evenPadding: boolean) =>
-  clsx({
-    "w-fit border-box h-18.5px flex flex-row items-center whitespace-nowrap tracking-wider leading-4 items-center justify-center px-2 py-2px text-12px rounded-full shadow-sm": true,
-    "bg-state-success-light-background text-state-success-light-color dark:bg-state-success-dark-background dark:text-state-success-dark-color ":
-      state === BadgeState.Success,
-    "bg-state-neutral-light-background text-state-neutral-light-color dark:bg-state-neutral-dark-background dark:text-state-neutral-dark-color":
-      state === BadgeState.Info,
-    "bg-state-error-light-background text-state-error-light-color dark:bg-state-error-dark-background dark:text-state-error-dark-color":
-      state === BadgeState.Error,
-    "bg-state-alert-light-background text-state-alert-light-color dark:bg-state-alert-dark-background dark:text-state-alert-dark-color":
-      state === BadgeState.Alert,
-    "p-[2px]": evenPadding,
-  });
+// "Alert" maps to MUI's `warning` palette — there's no separate "alert" key,
+// and this state was always semantically a warning colour (amber), not an
+// error (red, which BadgeState.Error already owns).
+const PALETTE_KEY: Record<BadgeState, "success" | "info" | "error" | "warning"> = {
+  [BadgeState.Success]: "success",
+  [BadgeState.Info]: "info",
+  [BadgeState.Error]: "error",
+  [BadgeState.Alert]: "warning",
+};
 
 export function StateBadge({ state = BadgeState.Success, evenPadding = false, children }: StateBadgeProps) {
-  return <span className={`${getBadgeClasses(state, evenPadding)}`}>{children}</span>;
+  const key = PALETTE_KEY[state];
+
+  return (
+    <Box
+      component="span"
+      sx={(theme) => ({
+        display: "inline-flex",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "fit-content",
+        whiteSpace: "nowrap",
+        letterSpacing: "0.05em",
+        lineHeight: "16px",
+        height: "18.5px",
+        px: evenPadding ? "2px" : 1,
+        py: "2px",
+        fontSize: 12,
+        borderRadius: 999,
+        boxShadow: theme.shadows[1],
+        bgcolor: `${key}.light`,
+        color: `${key}.dark`,
+        ...theme.applyStyles("dark", {
+          bgcolor: `${key}.dark`,
+          color: `${key}.light`,
+        }),
+      })}
+    >
+      {children}
+    </Box>
+  );
 }

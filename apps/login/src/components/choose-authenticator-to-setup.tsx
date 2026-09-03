@@ -1,3 +1,4 @@
+import { Stack } from "@mui/material";
 import { LoginSettings, PasskeysType } from "@zitadel/proto/zitadel/settings/v2/login_settings_pb";
 import { AuthenticationMethodType } from "@zitadel/proto/zitadel/user/v2/user_service_pb";
 import { Alert, AlertType } from "./alert";
@@ -19,14 +20,14 @@ export function ChooseAuthenticatorToSetup({ authMethods, params, loginSettings 
     );
   } else {
     return (
-      <div className="grid w-full grid-cols-1 gap-5 pt-4">
+      <Stack width="100%" gap={2.5} pt={2}>
         {!authMethods.includes(AuthenticationMethodType.PASSWORD) &&
           loginSettings.allowLocalAuthentication &&
           PASSWORD(false, "/password/set?" + params)}
         {!authMethods.includes(AuthenticationMethodType.PASSKEY) &&
           loginSettings.passkeysType == PasskeysType.ALLOWED &&
           PASSKEYS(false, "/passkey/set?" + params)}
-      </div>
+      </Stack>
     );
   }
 }

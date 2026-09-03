@@ -1,9 +1,11 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SessionsClearList } from "@/components/sessions-clear-list";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { getAllSessionCookieIds } from "@/lib/cookies";
 import { getServiceConfig } from "@/lib/service-url";
-import { getBrandingSettings, getDefaultOrg, listSessions, ServiceConfig } from "@/lib/zitadel";
+import { getDefaultOrg, listSessions, ServiceConfig } from "@/lib/zitadel";
 import { verifyJwt } from "@zitadel/client/node";
 import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
 import { Metadata } from "next";
@@ -70,8 +72,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   let sessions = await loadSessions({ serviceConfig });
 
-  const branding = await getBrandingSettings({ serviceConfig, organization: organization ?? defaultOrganization });
-
   const params = new URLSearchParams();
 
   if (organization) {
@@ -79,26 +79,22 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="logout" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="description" namespace="logout" />
-        </p>
-      </div>
-
-      <div className="w-full">
-        <div className="flex w-full flex-col space-y-2">
-          <SessionsClearList
-            sessions={sessions}
-            logoutHint={logoutHint}
-            postLogoutRedirectUri={postLogoutRedirectUri}
-            organization={organization ?? defaultOrganization}
-          />
-        </div>
-      </div>
-    </DynamicTheme>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="logout" />}
+      subtitle={<Translated i18nKey="description" namespace="logout" />}
+    >
+      <SessionsClearList
+        sessions={sessions}
+        logoutHint={logoutHint}
+        postLogoutRedirectUri={postLogoutRedirectUri}
+        organization={organization ?? defaultOrganization}
+      />
+    </LandingShell>
   );
 }

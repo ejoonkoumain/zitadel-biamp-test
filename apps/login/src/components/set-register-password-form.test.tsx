@@ -1,4 +1,5 @@
-import { cleanup, render } from "@testing-library/react";
+import { renderWithTheme } from "@/test-utils/render-with-theme";
+import { cleanup } from "@testing-library/react";
 import { create } from "@zitadel/client";
 import { PasswordComplexitySettingsSchema } from "@zitadel/proto/zitadel/settings/v2/password_settings_pb";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -21,7 +22,10 @@ vi.mock("@/lib/client", () => ({
 }));
 
 const defaultComplexitySettings = create(PasswordComplexitySettingsSchema, {
-  minLength: 8n,
+  // BigInt(8), not the `8n` literal: this file's tsconfig target predates
+  // ES2020 BigInt literal syntax (TS2737) — BigInt(...) produces the same
+  // value without relying on that syntax.
+  minLength: BigInt(8),
   requiresUppercase: false,
   requiresLowercase: false,
   requiresNumber: false,
@@ -32,7 +36,10 @@ describe("SetRegisterPasswordForm", () => {
   afterEach(cleanup);
 
   test("should autofocus the password input on mount", () => {
-    const { getByTestId } = render(
+    // Rendered through renderWithTheme (not a bare render) because the field
+    // is now a LandingFormField/TextField, which reads the Biamp theme's
+    // palette — see test-utils/render-with-theme.tsx.
+    const { getByTestId } = renderWithTheme(
       <SetRegisterPasswordForm
         passwordComplexitySettings={defaultComplexitySettings}
         email="test@example.com"

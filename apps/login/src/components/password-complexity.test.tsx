@@ -69,7 +69,7 @@ describe("<PasswordComplexity/>", () => {
     expect(screen.queryByTestId("length-check")).toBeInTheDocument();
   });
 
-  test("should render check icon when password meets length requirement", () => {
+  test("should render check icon (matches) when password meets length requirement", () => {
     render(
       <NextIntlClientProvider locale="en" messages={messages}>
         <PasswordComplexity
@@ -91,10 +91,13 @@ describe("<PasswordComplexity/>", () => {
 
     const lengthCheck = screen.getByTestId("length-check");
     const svg = lengthCheck.querySelector("svg");
-    expect(svg).toHaveClass("text-green-500");
+    expect(svg).toBeInTheDocument();
+    // The checkmark path is only rendered when the requirement is met.
+    expect(svg?.querySelector('path[d="M4.5 12.75l6 6 9-13.5"]')).toBeInTheDocument();
+    expect(lengthCheck.querySelector("title")).toHaveTextContent("Matches");
   });
 
-  test("should render cross icon when password does not meet length requirement", () => {
+  test("should render cross icon (does not match) when password does not meet length requirement", () => {
     render(
       <NextIntlClientProvider locale="en" messages={messages}>
         <PasswordComplexity
@@ -116,7 +119,10 @@ describe("<PasswordComplexity/>", () => {
 
     const lengthCheck = screen.getByTestId("length-check");
     const svg = lengthCheck.querySelector("svg");
-    expect(svg).toHaveClass("text-warn-light-500");
+    expect(svg).toBeInTheDocument();
+    // The X path is only rendered when the requirement is not met.
+    expect(svg?.querySelector('path[d="M6 18L18 6M6 6l12 12"]')).toBeInTheDocument();
+    expect(lengthCheck.querySelector("title")).toHaveTextContent("Doesn't match");
   });
 
   test("should render all complexity checks when all requirements are enabled", () => {

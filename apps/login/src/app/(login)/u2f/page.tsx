@@ -1,12 +1,14 @@
 import { Alert } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { LoginPasskey } from "@/components/login-passkey";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getSessionCookieById } from "@/lib/cookies";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getSession } from "@/lib/zitadel";
+import { getSession } from "@/lib/zitadel";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
@@ -23,8 +25,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   const _headers = await headers();
   const { serviceConfig } = getServiceConfig(_headers);
-
-  const branding = await getBrandingSettings({ serviceConfig, organization });
 
   const sessionFactors = sessionId
     ? await loadSessionById(sessionId, organization)
@@ -45,44 +45,41 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="verify.title" namespace="u2f" />
-        </h1>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="verify.title" namespace="u2f" />}
+      subtitle={<Translated i18nKey="verify.description" namespace="u2f" />}
+    >
+      {sessionFactors && (
+        <UserAvatar
+          loginName={loginName ?? sessionFactors.factors?.user?.loginName}
+          displayName={sessionFactors.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      )}
 
-        <p className="ztdl-p mb-6 block">
-          <Translated i18nKey="verify.description" namespace="u2f" />
-        </p>
+      {!(loginName || sessionId) && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-        {sessionFactors && (
-          <UserAvatar
-            loginName={loginName ?? sessionFactors.factors?.user?.loginName}
-            displayName={sessionFactors.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        )}
-
-        {!(loginName || sessionId) && (
-          <Alert>
-            <Translated i18nKey="unknownContext" namespace="error" />
-          </Alert>
-        )}
-      </div>
-
-      <div className="w-full">
-        {(loginName || sessionId) && (
-          <LoginPasskey
-            loginName={loginName}
-            sessionId={sessionId}
-            requestId={requestId}
-            altPassword={false}
-            organization={organization}
-            login={false} // this sets the userVerificationRequirement to discouraged as its used as second factor
-          />
-        )}
-      </div>
-    </DynamicTheme>
+      {(loginName || sessionId) && (
+        <LoginPasskey
+          loginName={loginName}
+          sessionId={sessionId}
+          requestId={requestId}
+          altPassword={false}
+          organization={organization}
+          login={false} // this sets the userVerificationRequirement to discouraged as its used as second factor
+        />
+      )}
+    </LandingShell>
   );
 }

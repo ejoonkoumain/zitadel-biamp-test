@@ -1,19 +1,14 @@
 import { Alert, AlertType } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SetPasswordForm } from "@/components/set-password-form";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { UNKNOWN_USER_ID } from "@/lib/constants";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import {
-  getBrandingSettings,
-  getDefaultOrg,
-  getLoginSettings,
-  getPasswordComplexitySettings,
-  getUserByID,
-  searchUsers,
-} from "@/lib/zitadel";
+import { getDefaultOrg, getLoginSettings, getPasswordComplexitySettings, getUserByID, searchUsers } from "@/lib/zitadel";
 import { Organization } from "@zitadel/proto/zitadel/org/v2/org_pb";
 import { Session } from "@zitadel/proto/zitadel/session/v2/session_pb";
 import { User } from "@zitadel/proto/zitadel/user/v2/user_pb";
@@ -54,8 +49,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
     });
   }
 
-  const branding = await getBrandingSettings({ serviceConfig, organization: organization ?? defaultOrganization });
-
   const passwordComplexity = await getPasswordComplexitySettings({
     serviceConfig,
     organization: organization ?? session?.factors?.user?.organizationId ?? defaultOrganization,
@@ -68,13 +61,18 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   if (!loginSettings) {
     return (
-      <DynamicTheme branding={branding}>
-        <div className="mx-auto flex max-w-sm flex-col space-y-4 pt-4">
-          <Alert>
-            <Translated i18nKey="errors.couldNotGetLoginSettings" namespace="loginname" />
-          </Alert>
-        </div>
-      </DynamicTheme>
+      <LandingShell
+        actions={
+          <>
+            <LanguageSwitcher />
+            <ThemeSwitch />
+          </>
+        }
+      >
+        <Alert>
+          <Translated i18nKey="errors.couldNotGetLoginSettings" namespace="loginname" />
+        </Alert>
+      </LandingShell>
     );
   }
 
@@ -101,64 +99,60 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>{session?.factors?.user?.displayName ?? <Translated i18nKey="set.title" namespace="password" />}</h1>
-        <p className="ztdl-p mb-6 block">
-          <Translated i18nKey="set.description" namespace="password" />
-        </p>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={session?.factors?.user?.displayName ?? <Translated i18nKey="set.title" namespace="password" />}
+      subtitle={<Translated i18nKey="set.description" namespace="password" />}
+    >
+      {/* Only warn when there is neither a loginName nor a userId to continue with.
+          A missing session is expected here: the set/reset flow works via code +
+          userId, and under enumeration protection no session exists by design. */}
+      {!loginName && !userId && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-        {/* Only warn when there is neither a loginName nor a userId to continue with.
-            A missing session is expected here: the set/reset flow works via code +
-            userId, and under enumeration protection no session exists by design. */}
-        {!loginName && !userId && (
-          <div className="py-4">
-            <Alert>
-              <Translated i18nKey="unknownContext" namespace="error" />
-            </Alert>
-          </div>
-        )}
+      {session ? (
+        <UserAvatar
+          loginName={loginName ?? session.factors?.user?.loginName}
+          displayName={session.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      ) : loginName ? (
+        <UserAvatar loginName={loginName} displayName={loginName} showDropdown searchParams={searchParams} />
+      ) : null}
 
-        {session ? (
-          <UserAvatar
-            loginName={loginName ?? session.factors?.user?.loginName}
-            displayName={session.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        ) : loginName ? (
-          <UserAvatar loginName={loginName} displayName={loginName} showDropdown searchParams={searchParams}></UserAvatar>
-        ) : null}
-      </div>
+      {!initial && (
+        <Alert type={AlertType.INFO}>
+          <Translated i18nKey="set.codeSent" namespace="password" />
+        </Alert>
+      )}
 
-      <div className="w-full">
-        {!initial && (
-          <Alert type={AlertType.INFO}>
-            <Translated i18nKey="set.codeSent" namespace="password" />
-          </Alert>
-        )}
-
-        {passwordComplexity &&
-        (loginName ?? user?.preferredLoginName) &&
-        (userId ?? session?.factors?.user?.id ?? (loginSettings?.ignoreUnknownUsernames ? UNKNOWN_USER_ID : undefined)) ? (
-          <SetPasswordForm
-            code={code}
-            userId={userId ?? (session?.factors?.user?.id as string) ?? UNKNOWN_USER_ID}
-            loginName={loginName ?? (user?.preferredLoginName as string)}
-            requestId={requestId}
-            organization={organization}
-            defaultOrganization={defaultOrganization}
-            passwordComplexitySettings={passwordComplexity}
-            codeRequired={!(initial === "true")}
-          />
-        ) : (
-          <div className="py-4">
-            <Alert>
-              <Translated i18nKey="failedLoading" namespace="error" />
-            </Alert>
-          </div>
-        )}
-      </div>
-    </DynamicTheme>
+      {passwordComplexity &&
+      (loginName ?? user?.preferredLoginName) &&
+      (userId ?? session?.factors?.user?.id ?? (loginSettings?.ignoreUnknownUsernames ? UNKNOWN_USER_ID : undefined)) ? (
+        <SetPasswordForm
+          code={code}
+          userId={userId ?? (session?.factors?.user?.id as string) ?? UNKNOWN_USER_ID}
+          loginName={loginName ?? (user?.preferredLoginName as string)}
+          requestId={requestId}
+          organization={organization}
+          defaultOrganization={defaultOrganization}
+          passwordComplexitySettings={passwordComplexity}
+          codeRequired={!(initial === "true")}
+        />
+      ) : (
+        <Alert>
+          <Translated i18nKey="failedLoading" namespace="error" />
+        </Alert>
+      )}
+    </LandingShell>
   );
 }

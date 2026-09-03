@@ -1,76 +1,76 @@
-import { clsx } from "clsx";
+import { Box } from "@mui/material";
 import { ReactNode } from "react";
 
-const Label = ({
-  children,
-  animateRerendering,
-  color,
-}: {
-  children: ReactNode;
-  animateRerendering?: boolean;
-  color?: "default" | "pink" | "blue" | "violet" | "cyan" | "orange" | "red";
-}) => {
-  return (
-    <div
-      className={clsx("rounded-full px-1.5", {
-        "bg-gray-800 text-gray-500": color === "default",
-        "bg-pink-500 text-pink-100": color === "pink",
-        "bg-blue-500 text-blue-100": color === "blue",
-        "bg-cyan-500 text-cyan-100": color === "cyan",
-        "bg-red-500 text-red-100": color === "red",
-        "bg-violet-500 text-violet-100": color === "violet",
-        "bg-orange-500 text-orange-100": color === "orange",
-        "animate-[highlight_1s_ease-in-out_1]": animateRerendering,
-      })}
-    >
-      {children}
-    </div>
-  );
+type Color = "default" | "pink" | "blue" | "violet" | "cyan" | "orange" | "red";
+
+const LABEL_COLORS: Record<Color, { bgcolor: string; color: string }> = {
+  default: { bgcolor: "grey.800", color: "grey.500" },
+  pink: { bgcolor: "#ec4899", color: "#fce7f3" },
+  blue: { bgcolor: "#3b82f6", color: "#dbeafe" },
+  cyan: { bgcolor: "#06b6d4", color: "#cffafe" },
+  red: { bgcolor: "#ef4444", color: "#fee2e2" },
+  violet: { bgcolor: "#8b5cf6", color: "#ede9fe" },
+  orange: { bgcolor: "#f97316", color: "#ffedd5" },
 };
+
+const BORDER_COLORS: Record<Color, string> = {
+  default: "divider",
+  pink: "#ec4899",
+  blue: "#3b82f6",
+  cyan: "#06b6d4",
+  red: "#ef4444",
+  violet: "#8b5cf6",
+  orange: "#f97316",
+};
+
+const Label = ({ children, color = "default" }: { children: ReactNode; color?: Color }) => {
+  return <Box sx={{ borderRadius: 999, px: 0.75, ...LABEL_COLORS[color] }}>{children}</Box>;
+};
+
 export const Boundary = ({
   children,
   labels = ["children"],
   size = "default",
   color = "default",
-  animateRerendering = true,
 }: {
   children: ReactNode;
   labels?: string[];
   size?: "small" | "default";
-  color?: "default" | "pink" | "blue" | "violet" | "cyan" | "orange" | "red";
+  color?: Color;
   animateRerendering?: boolean;
 }) => {
   return (
-    <div
-      className={clsx("relative rounded-lg border border-dashed", {
-        "p-3 lg:p-5": size === "small",
-        "p-4 lg:p-9 lg:pb-6": size === "default",
-        "border-divider-light dark:border-divider-dark": color === "default",
-        "border-pink-500": color === "pink",
-        "border-blue-500": color === "blue",
-        "border-cyan-500": color === "cyan",
-        "border-red-500": color === "red",
-        "border-violet-500": color === "violet",
-        "border-orange-500": color === "orange",
-        "animate-[rerender_1s_ease-in-out_1] text-pink-500": animateRerendering,
-      })}
+    <Box
+      sx={{
+        position: "relative",
+        borderRadius: 2,
+        border: "1px dashed",
+        borderColor: BORDER_COLORS[color],
+        p: size === "small" ? { xs: 1.5, lg: 2.5 } : { xs: 2, lg: 4.5 },
+        pb: size === "default" ? { lg: 3 } : undefined,
+      }}
     >
-      <div
-        className={clsx("absolute -top-2 flex space-x-1 text-[9px] leading-4 tracking-widest uppercase", {
-          "left-3 lg:left-5": size === "small",
-          "left-4 lg:left-9": size === "default",
-        })}
+      <Box
+        sx={{
+          position: "absolute",
+          top: -8,
+          left: size === "small" ? { xs: 1.5, lg: 2.5 } : { xs: 2, lg: 4.5 },
+          display: "flex",
+          gap: 0.5,
+          fontSize: 9,
+          lineHeight: "16px",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}
       >
-        {labels.map((label) => {
-          return (
-            <Label key={label} color={color} animateRerendering={animateRerendering}>
-              {label}
-            </Label>
-          );
-        })}
-      </div>
+        {labels.map((label) => (
+          <Label key={label} color={color}>
+            {label}
+          </Label>
+        ))}
+      </Box>
 
       {children}
-    </div>
+    </Box>
   );
 };

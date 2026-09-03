@@ -1,14 +1,17 @@
 import { Alert } from "@/components/alert";
 import { BackButton } from "@/components/back-button";
 import { Button, ButtonVariants } from "@/components/button";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { TotpRegister } from "@/components/totp-register";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { getEnrollmentAuthorizationError } from "@/lib/server/enrollment-guard";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { addOTPEmail, addOTPSMS, getBrandingSettings, getLoginSettings, registerTOTP } from "@/lib/zitadel";
+import { addOTPEmail, addOTPSMS, getLoginSettings, registerTOTP } from "@/lib/zitadel";
+import { Stack } from "@mui/material";
 import { RegisterTOTPResponse } from "@zitadel/proto/zitadel/user/v2/user_service_pb";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -27,7 +30,6 @@ export default async function Page(props: {
   const _headers = await headers();
   const { serviceConfig } = getServiceConfig(_headers);
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
   const loginSettings = await getLoginSettings({ serviceConfig, organization });
 
   const session = await loadMostRecentSession({
@@ -112,77 +114,64 @@ export default async function Page(props: {
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="set.title" namespace="otp" />
-        </h1>
-
-        {totpResponse && "uri" in totpResponse && "secret" in totpResponse ? (
-          <p className="ztdl-p">
-            <Translated i18nKey="set.totpRegisterDescription" namespace="otp" />
-          </p>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="set.title" namespace="otp" />}
+      subtitle={
+        totpResponse && "uri" in totpResponse && "secret" in totpResponse ? (
+          <Translated i18nKey="set.totpRegisterDescription" namespace="otp" />
+        ) : method === "email" ? (
+          "Code via email was successfully added."
+        ) : method === "sms" ? (
+          "Code via SMS was successfully added."
         ) : (
-          <p className="ztdl-p">
-            {method === "email"
-              ? "Code via email was successfully added."
-              : method === "sms"
-                ? "Code via SMS was successfully added."
-                : ""}
-          </p>
-        )}
+          ""
+        )
+      }
+    >
+      {!session && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-        {!session && (
-          <div className="py-4">
-            <Alert>
-              <Translated i18nKey="unknownContext" namespace="error" />
-            </Alert>
-          </div>
-        )}
+      {error && <Alert>{error?.message}</Alert>}
 
-        {error && (
-          <div className="py-4">
-            <Alert>{error?.message}</Alert>
-          </div>
-        )}
+      {session && (
+        <UserAvatar
+          loginName={loginName ?? session.factors?.user?.loginName}
+          displayName={session.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      )}
 
-        {session && (
-          <UserAvatar
-            loginName={loginName ?? session.factors?.user?.loginName}
-            displayName={session.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        )}
-      </div>
-
-      <div className="w-full">
-        {totpResponse && "uri" in totpResponse && "secret" in totpResponse ? (
-          <div>
-            <TotpRegister
-              uri={totpResponse.uri as string}
-              secret={totpResponse.secret as string}
-              loginName={loginName}
-              sessionId={sessionId}
-              requestId={requestId}
-              organization={organization}
-              checkAfter={checkAfter === "true"}
-              loginSettings={loginSettings}
-            ></TotpRegister>
-          </div>
-        ) : (
-          <div className="mt-8 flex w-full flex-row items-center">
-            <BackButton />
-            <span className="flex-grow"></span>
-
-            <Link href={urlToContinue}>
-              <Button type="submit" className="self-end" variant={ButtonVariants.Primary}>
-                <Translated i18nKey="set.submit" namespace="otp" />
-              </Button>
-            </Link>
-          </div>
-        )}
-      </div>
-    </DynamicTheme>
+      {totpResponse && "uri" in totpResponse && "secret" in totpResponse ? (
+        <TotpRegister
+          uri={totpResponse.uri as string}
+          secret={totpResponse.secret as string}
+          loginName={loginName}
+          sessionId={sessionId}
+          requestId={requestId}
+          organization={organization}
+          checkAfter={checkAfter === "true"}
+          loginSettings={loginSettings}
+        />
+      ) : (
+        <Stack direction="row" alignItems="center" width="100%" justifyContent="space-between" mt={4}>
+          <BackButton />
+          <Link href={urlToContinue}>
+            <Button type="submit" variant={ButtonVariants.Primary}>
+              <Translated i18nKey="set.submit" namespace="otp" />
+            </Button>
+          </Link>
+        </Stack>
+      )}
+    </LandingShell>
   );
 }

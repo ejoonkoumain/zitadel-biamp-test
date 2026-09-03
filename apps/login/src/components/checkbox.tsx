@@ -1,4 +1,4 @@
-import { Checkbox as MuiCheckbox, FormControlLabel } from "@mui/material";
+import { FormControlLabel, Checkbox as MuiCheckbox } from "@mui/material";
 import { DetailedHTMLProps, forwardRef, InputHTMLAttributes, useEffect, useState } from "react";
 
 export type CheckboxProps = DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> & {

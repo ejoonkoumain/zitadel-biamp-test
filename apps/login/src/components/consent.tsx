@@ -1,6 +1,7 @@
 "use client";
 
 import { completeDeviceAuthorization } from "@/lib/server/device";
+import { Box, Paper, Stack, Typography } from "@mui/material";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,6 +10,21 @@ import { Alert } from "./alert";
 import { Button, ButtonVariants } from "./button";
 import { Spinner } from "./spinner";
 import { Translated } from "./translated";
+
+// Bordered, rounded scope row — the same tile pattern as auth-methods.tsx's
+// `tileSx` (borderRadius 2, 1px `divider` border, Paper's own theme-driven
+// background), minus the hover/pointer affordances: these rows are
+// informational, not links.
+const scopeItemSx = {
+  display: "flex",
+  alignItems: "center",
+  width: "100%",
+  borderRadius: 2,
+  border: 1,
+  borderColor: "divider",
+  px: 2,
+  py: 1,
+};
 
 export function ConsentScreen({
   scope,
@@ -45,12 +61,14 @@ export function ConsentScreen({
   const scopes = scope?.filter((s) => !!s);
 
   return (
-    <div className="flex w-full flex-col items-center space-y-4 pt-4">
-      <ul className="w-full list-disc space-y-2">
+    <Stack alignItems="center" gap={2} width="100%" pt={2}>
+      <Stack component="ul" gap={1} width="100%" sx={{ listStyle: "none", m: 0, p: 0 }}>
         {scopes?.length === 0 && (
-          <span className="border-divider-light bg-background-light-400 dark:bg-background-dark-400 flex w-full flex-row items-center rounded-md border px-4 py-2 text-sm transition-all">
-            <Translated i18nKey="device.scope.openid" namespace="device" />
-          </span>
+          <Paper component="li" elevation={0} sx={scopeItemSx}>
+            <Typography variant="body2">
+              <Translated i18nKey="device.scope.openid" namespace="device" />
+            </Typography>
+          </Paper>
         )}
         {scopes?.map((s) => {
           const translationKey = `device.scope.${s}`;
@@ -60,27 +78,28 @@ export function ConsentScreen({
           const resolvedDescription = description === translationKey ? "" : description;
 
           return (
-            <li
-              key={s}
-              className="border-divider-light bg-background-light-400 dark:bg-background-dark-400 flex w-full flex-row items-center rounded-md border px-4 py-2 text-sm transition-all"
-            >
-              <span>{resolvedDescription}</span>
-            </li>
+            <Paper component="li" key={s} elevation={0} sx={scopeItemSx}>
+              <Typography variant="body2">{resolvedDescription}</Typography>
+            </Paper>
           );
         })}
-      </ul>
+      </Stack>
 
-      <p className="ztdl-p text-left text-xs">
+      {/* Direct child of LandingShell's background (no Card/Paper wraps this
+          paragraph) — text.secondary per the colour rule, same choice as
+          sign-in-with-idp.tsx and mfa/page.tsx make for text sitting
+          straight on the shell's fixed dark background. */}
+      <Typography variant="caption" color="text.secondary" textAlign="left">
         <Translated i18nKey="request.disclaimer" namespace="device" data={{ appName: appName }} />
-      </p>
+      </Typography>
 
       {error && (
-        <div className="py-4">
+        <Box py={2} width="100%">
           <Alert>{error}</Alert>
-        </div>
+        </Box>
       )}
 
-      <div className="mt-4 flex w-full flex-row items-center">
+      <Stack direction="row" alignItems="center" width="100%" mt={2}>
         <Button
           onClick={() => {
             denyDeviceAuth();
@@ -88,17 +107,17 @@ export function ConsentScreen({
           variant={ButtonVariants.Secondary}
           data-testid="deny-button"
         >
-          {loading && <Spinner className="mr-2 h-5 w-5" />}
+          {loading && <Spinner />}
           <Translated i18nKey="device.request.deny" namespace="device" />
         </Button>
-        <span className="flex-grow"></span>
+        <Box flexGrow={1} />
 
         <Link href={nextUrl}>
-          <Button data-testid="submit-button" type="submit" className="self-end" variant={ButtonVariants.Primary}>
+          <Button data-testid="submit-button" type="submit" variant={ButtonVariants.Primary}>
             <Translated i18nKey="device.request.submit" namespace="device" />
           </Button>
         </Link>
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

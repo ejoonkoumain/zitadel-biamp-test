@@ -3,12 +3,13 @@
 import { lowerCaseValidator, numberValidator, symbolValidator, upperCaseValidator } from "@/helpers/validators";
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { changePassword, resetPassword, sendPassword } from "@/lib/server/password";
+import { Box, Stack } from "@mui/material";
 import { create } from "@zitadel/client";
 import { ChecksSchema } from "@zitadel/proto/zitadel/session/v2/session_service_pb";
 import { PasswordComplexitySettings } from "@zitadel/proto/zitadel/settings/v2/password_settings_pb";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { CSSProperties, useState } from "react";
 import { FieldValues, useForm } from "react-hook-form";
 import { Alert, AlertType } from "./alert";
 import { AutoSubmitForm } from "./auto-submit-form";
@@ -36,6 +37,20 @@ type Props = {
   defaultOrganization?: string;
   requestId?: string;
   codeRequired: boolean;
+};
+
+// Reproduces Tailwind's `.sr-only` utility inline: visually hidden but still
+// present for password managers / screen readers, without a Tailwind class.
+const srOnlyStyle: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
 };
 
 export function SetPasswordForm({
@@ -171,8 +186,8 @@ export function SetPasswordForm({
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className="mb-4 grid grid-cols-1 gap-4 pt-4">
+      <Box component="form" width="100%">
+        <Stack gap={2} mb={2} pt={2}>
           <input
             type="text"
             name="username"
@@ -181,73 +196,76 @@ export function SetPasswordForm({
             readOnly
             tabIndex={-1}
             aria-hidden="true"
-            className="sr-only"
+            style={srOnlyStyle}
           />
           {codeRequired && (
             <Alert type={AlertType.INFO}>
-              <div className="flex flex-row">
-                <span className="mr-auto flex-1 text-left">
+              <Stack direction="row" alignItems="center" width="100%">
+                <Box component="span" sx={{ mr: "auto", flex: 1, textAlign: "left" }}>
                   <Translated i18nKey="set.noCodeReceived" namespace="password" />
-                </span>
-                <button
+                </Box>
+                <Box
+                  component="button"
                   aria-label="Resend OTP Code"
                   disabled={loading}
                   type="button"
-                  className="text-primary-light-500 hover:text-primary-light-400 dark:text-primary-dark-500 hover:dark:text-primary-dark-400 ml-4 cursor-pointer disabled:cursor-default disabled:text-gray-400 dark:disabled:text-gray-700"
                   onClick={() => {
                     resendCode();
                   }}
                   data-testid="resend-button"
+                  sx={{
+                    ml: 2,
+                    background: "none",
+                    border: "none",
+                    p: 0,
+                    cursor: "pointer",
+                    color: "info.main",
+                    "&:disabled": { cursor: "default", color: "action.disabled" },
+                  }}
                 >
                   <Translated i18nKey="set.resend" namespace="password" />
-                </button>
-              </div>
+                </Box>
+              </Stack>
             </Alert>
           )}
           {codeRequired && (
-            <div>
-              <TextInput
-                type="text"
-                autoFocus
-                required
-                {...register("code", {
-                  required: t("set.required.code"),
-                })}
-                label={t("set.labels.code")}
-                autoComplete="one-time-code"
-                error={errors.code?.message as string}
-                data-testid="code-text-input"
-              />
-            </div>
+            <TextInput
+              type="text"
+              autoFocus
+              required
+              {...register("code", {
+                required: t("set.required.code"),
+              })}
+              label={t("set.labels.code")}
+              autoComplete="one-time-code"
+              error={errors.code?.message as string}
+              data-testid="code-text-input"
+            />
           )}
-          <div>
-            <TextInput
-              type="password"
-              autoComplete="new-password"
-              autoFocus={!codeRequired}
-              required
-              {...register("password", {
-                required: t("set.required.newPassword"),
-              })}
-              label={t("set.labels.newPassword")}
-              error={errors.password?.message as string}
-              data-testid="password-set-text-input"
-            />
-          </div>
-          <div>
-            <TextInput
-              type="password"
-              required
-              autoComplete="new-password"
-              {...register("confirmPassword", {
-                required: t("set.required.confirmPassword"),
-              })}
-              label={t("set.labels.confirmPassword")}
-              error={errors.confirmPassword?.message as string}
-              data-testid="password-set-confirm-text-input"
-            />
-          </div>
-        </div>
+          <TextInput
+            type="password"
+            autoComplete="new-password"
+            autoFocus={!codeRequired}
+            required
+            {...register("password", {
+              required: t("set.required.newPassword"),
+            })}
+            label={t("set.labels.newPassword")}
+            error={errors.password?.message as string}
+            data-testid="password-set-text-input"
+          />
+          <TextInput
+            type="password"
+            required
+            autoComplete="new-password"
+            {...register("confirmPassword", {
+              required: t("set.required.confirmPassword"),
+            })}
+            label={t("set.labels.confirmPassword")}
+            error={errors.confirmPassword?.message as string}
+            data-testid="password-set-confirm-text-input"
+          />
+        </Stack>
 
         {passwordComplexitySettings && (
           <PasswordComplexity
@@ -259,7 +277,7 @@ export function SetPasswordForm({
 
         {error && <Alert>{error}</Alert>}
 
-        <div className="mt-8 flex w-full flex-row items-center justify-between">
+        <Stack direction="row" width="100%" alignItems="center" justifyContent="space-between" mt={4}>
           <BackButton data-testid="back-button" />
           <Button
             type="submit"
@@ -268,10 +286,10 @@ export function SetPasswordForm({
             onClick={handleSubmit(submitPassword)}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="set.submit" namespace="password" />
+            {loading && <Spinner />} <Translated i18nKey="set.submit" namespace="password" />
           </Button>
-        </div>
-      </form>
+        </Stack>
+      </Box>
     </>
   );
 }

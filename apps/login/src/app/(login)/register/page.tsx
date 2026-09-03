@@ -1,12 +1,13 @@
 import { Alert } from "@/components/alert";
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { RegisterForm } from "@/components/register-form";
 import { SignInWithIdp } from "@/components/sign-in-with-idp";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { getServiceConfig } from "@/lib/service-url";
 import {
   getActiveIdentityProviders,
-  getBrandingSettings,
   getDefaultOrg,
   getLegalAndSupportSettings,
   getLoginSettings,
@@ -40,8 +41,6 @@ export default async function Page(props: { searchParams: Promise<Record<string 
   const legal = await getLegalAndSupportSettings({ serviceConfig, organization });
   const passwordComplexitySettings = await getPasswordComplexitySettings({ serviceConfig, organization });
 
-  const branding = await getBrandingSettings({ serviceConfig, organization });
-
   const loginSettings = await getLoginSettings({ serviceConfig, organization });
 
   const identityProviders = await getActiveIdentityProviders({ serviceConfig, orgId: organization }).then((resp) => {
@@ -52,77 +51,76 @@ export default async function Page(props: { searchParams: Promise<Record<string 
 
   if (!loginSettings) {
     return (
-      <DynamicTheme branding={branding}>
-        <div className="flex flex-col space-y-4">
-          <h1>
-            <Translated i18nKey="title" namespace="register" />
-          </h1>
-          <Alert>
-            <Translated i18nKey="unknownContext" namespace="error" />
-          </Alert>
-        </div>
-        <div className="w-full"></div>
-      </DynamicTheme>
+      <LandingShell
+        actions={
+          <>
+            <LanguageSwitcher />
+            <ThemeSwitch />
+          </>
+        }
+        title={<Translated i18nKey="title" namespace="register" />}
+      >
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      </LandingShell>
     );
   }
 
   if (!loginSettings?.allowRegister && (!loginSettings.allowExternalIdp || identityProviders.length === 0)) {
     return (
-      <DynamicTheme branding={branding}>
-        <div className="flex flex-col space-y-4">
-          <h1>
-            <Translated i18nKey="disabled.title" namespace="register" />
-          </h1>
-          <p className="ztdl-p">
-            <Translated i18nKey="disabled.description" namespace="register" />
-          </p>
-        </div>
-        <div className="w-full"></div>
-      </DynamicTheme>
+      <LandingShell
+        actions={
+          <>
+            <LanguageSwitcher />
+            <ThemeSwitch />
+          </>
+        }
+        title={<Translated i18nKey="disabled.title" namespace="register" />}
+        subtitle={<Translated i18nKey="disabled.description" namespace="register" />}
+      >
+        <></>
+      </LandingShell>
     );
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="register" />
-        </h1>
-        <p className="ztdl-p">
-          <Translated i18nKey="description" namespace="register" />
-        </p>
-      </div>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="register" />}
+      subtitle={<Translated i18nKey="description" namespace="register" />}
+    >
+      {!organization && (
+        <Alert>
+          <Translated i18nKey="unknownContext" namespace="error" />
+        </Alert>
+      )}
 
-      <div className="w-full">
-        {!organization && (
-          <Alert>
-            <Translated i18nKey="unknownContext" namespace="error" />
-          </Alert>
-        )}
+      {legal && passwordComplexitySettings && organization && loginSettings.allowLocalAuthentication && (
+        <RegisterForm
+          idpCount={!loginSettings?.allowExternalIdp ? 0 : identityProviders.length}
+          legal={legal}
+          organization={organization}
+          firstname={firstname}
+          lastname={lastname}
+          email={email}
+          requestId={requestId}
+          loginSettings={loginSettings}
+        ></RegisterForm>
+      )}
 
-        {legal && passwordComplexitySettings && organization && loginSettings.allowLocalAuthentication && (
-          <RegisterForm
-            idpCount={!loginSettings?.allowExternalIdp ? 0 : identityProviders.length}
-            legal={legal}
-            organization={organization}
-            firstname={firstname}
-            lastname={lastname}
-            email={email}
-            requestId={requestId}
-            loginSettings={loginSettings}
-          ></RegisterForm>
-        )}
-
-        {loginSettings?.allowExternalIdp && !!identityProviders.length && (
-          <>
-            <SignInWithIdp
-              identityProviders={identityProviders}
-              requestId={requestId}
-              organization={organization}
-            ></SignInWithIdp>
-          </>
-        )}
-      </div>
-    </DynamicTheme>
+      {loginSettings?.allowExternalIdp && !!identityProviders.length && (
+        <SignInWithIdp
+          identityProviders={identityProviders}
+          requestId={requestId}
+          organization={organization}
+        ></SignInWithIdp>
+      )}
+    </LandingShell>
   );
 }

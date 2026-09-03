@@ -1,8 +1,8 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
-import { getServiceConfig } from "@/lib/service-url";
-import { getBrandingSettings } from "@/lib/zitadel";
-import { headers } from "next/headers";
+import { Typography } from "@mui/material";
 
 /**
  * Linking failed page - shown when IDP linking fails
@@ -12,24 +12,24 @@ export default async function LinkingFailedPage(props: {
   params: Promise<{ provider: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const { organization, error } = searchParams;
-
-  const _headers = await headers();
-  const { serviceConfig } = getServiceConfig(_headers);
-
-  const branding = await getBrandingSettings({ serviceConfig, organization });
+  const { error } = searchParams;
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="title" namespace="idp" />
-        </h1>
-        <p className="ztdl-p text-center">
-          <Translated i18nKey="errors.linkingFailed" namespace="idp" />
-        </p>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      </div>
-    </DynamicTheme>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="title" namespace="idp" />}
+      subtitle={<Translated i18nKey="errors.linkingFailed" namespace="idp" />}
+    >
+      {error && (
+        <Typography variant="body2" color="error.main" textAlign="center">
+          {error}
+        </Typography>
+      )}
+    </LandingShell>
   );
 }

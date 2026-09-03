@@ -2,6 +2,7 @@
 
 import { handleServerActionResponse } from "@/lib/client-utils";
 import { registerUserAndLinkToIDP } from "@/lib/server/register";
+import { Box, Stack } from "@mui/material";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -93,67 +94,59 @@ export function RegisterFormIDPIncomplete({
   return (
     <>
       {samlData && <AutoSubmitForm url={samlData.url} fields={samlData.fields} />}
-      <form className="w-full">
-        <div className="mb-4 grid grid-cols-1 gap-4">
+      <Box component="form" width="100%">
+        <Stack gap={2} mb={2}>
           {!idpUserName && (
-            <div className="">
-              <TextInput
-                type="text"
-                autoComplete="username"
-                autoFocus
-                required
-                {...register("username", { required: "Username is required" })}
-                label="Username"
-                error={errors.username?.message as string}
-                data-testid="username-text-input"
-              />
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="">
-              <TextInput
-                type="firstname"
-                autoComplete="firstname"
-                autoFocus={!!idpUserName}
-                required
-                {...register("firstname", { required: t("required.firstname") })}
-                label={t("labels.firstname")}
-                error={errors.firstname?.message as string}
-                data-testid="firstname-text-input"
-              />
-            </div>
-            <div className="">
-              <TextInput
-                type="lastname"
-                autoComplete="lastname"
-                required
-                {...register("lastname", { required: t("required.lastname") })}
-                label={t("labels.lastname")}
-                error={errors.lastname?.message as string}
-                data-testid="lastname-text-input"
-              />
-            </div>
-          </div>
-          <div className="">
             <TextInput
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
+              autoFocus
               required
-              {...register("email", { required: t("required.email") })}
-              label={t("labels.email")}
-              error={errors.email?.message as string}
-              data-testid="email-text-input"
+              {...register("username", { required: "Username is required" })}
+              label="Username"
+              error={errors.username?.message as string}
+              data-testid="username-text-input"
             />
-          </div>
-        </div>
+          )}
+          <Stack direction="row" gap={2}>
+            <TextInput
+              type="firstname"
+              autoComplete="firstname"
+              autoFocus={!!idpUserName}
+              required
+              {...register("firstname", { required: t("required.firstname") })}
+              label={t("labels.firstname")}
+              error={errors.firstname?.message as string}
+              data-testid="firstname-text-input"
+            />
+            <TextInput
+              type="lastname"
+              autoComplete="lastname"
+              required
+              {...register("lastname", { required: t("required.lastname") })}
+              label={t("labels.lastname")}
+              error={errors.lastname?.message as string}
+              data-testid="lastname-text-input"
+            />
+          </Stack>
+          <TextInput
+            type="email"
+            autoComplete="email"
+            required
+            {...register("email", { required: t("required.email") })}
+            label={t("labels.email")}
+            error={errors.email?.message as string}
+            data-testid="email-text-input"
+          />
+        </Stack>
 
         {error && (
-          <div className="py-4">
+          <Box py={2}>
             <Alert>{error}</Alert>
-          </div>
+          </Box>
         )}
 
-        <div className="mt-8 flex w-full flex-row items-center justify-between">
+        <Stack direction="row" width="100%" alignItems="center" justifyContent="space-between" mt={4}>
           <BackButton data-testid="back-button" />
           <Button
             type="submit"
@@ -162,10 +155,10 @@ export function RegisterFormIDPIncomplete({
             onClick={handleSubmit(submitAndRegister)}
             data-testid="submit-button"
           >
-            {loading && <Spinner className="mr-2 h-5 w-5" />} <Translated i18nKey="submit" namespace="register" />
+            {loading && <Spinner />} <Translated i18nKey="submit" namespace="register" />
           </Button>
-        </div>
-      </form>
+        </Stack>
+      </Box>
     </>
   );
 }

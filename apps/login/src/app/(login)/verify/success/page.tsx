@@ -1,10 +1,12 @@
-import { DynamicTheme } from "@/components/dynamic-theme";
+import { LandingShell } from "@/components/bwp/landing-shell";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import ThemeSwitch from "@/components/theme-switch";
 import { Translated } from "@/components/translated";
 import { UserAvatar } from "@/components/user-avatar";
 import { VerifySuccessContinue } from "@/components/verify-success-continue";
 import { getServiceConfig } from "@/lib/service-url";
 import { loadMostRecentSession } from "@/lib/session";
-import { getBrandingSettings, getUserByID } from "@/lib/zitadel";
+import { getUserByID } from "@/lib/zitadel";
 import { HumanUser, User } from "@zitadel/proto/zitadel/user/v2/user_pb";
 import { headers } from "next/headers";
 
@@ -15,8 +17,6 @@ export default async function Page(props: { searchParams: Promise<any> }) {
   const { serviceConfig } = getServiceConfig(_headers);
 
   const { loginName, organization, userId, requestId } = searchParams;
-
-  const branding = await getBrandingSettings({ serviceConfig, organization });
 
   const sessionFactors = await loadMostRecentSession({ serviceConfig, sessionParams: { loginName, organization } });
 
@@ -53,29 +53,29 @@ export default async function Page(props: { searchParams: Promise<any> }) {
   }
 
   return (
-    <DynamicTheme branding={branding}>
-      <div className="flex flex-col space-y-4">
-        <h1>
-          <Translated i18nKey="successTitle" namespace="verify" />
-        </h1>
-        <p className="ztdl-p mb-6 block">
-          <Translated i18nKey="successDescription" namespace="verify" />
-        </p>
-
-        {sessionFactors ? (
-          <UserAvatar
-            loginName={loginName ?? sessionFactors.factors?.user?.loginName}
-            displayName={sessionFactors.factors?.user?.displayName}
-            showDropdown
-            searchParams={searchParams}
-          ></UserAvatar>
-        ) : (
-          user && (
-            <UserAvatar loginName={user.preferredLoginName} displayName={human?.profile?.displayName} showDropdown={false} />
-          )
-        )}
-      </div>
-      <div className="w-full">{continueUrl && <VerifySuccessContinue continueUrl={continueUrl} />}</div>
-    </DynamicTheme>
+    <LandingShell
+      actions={
+        <>
+          <LanguageSwitcher />
+          <ThemeSwitch />
+        </>
+      }
+      title={<Translated i18nKey="successTitle" namespace="verify" />}
+      subtitle={<Translated i18nKey="successDescription" namespace="verify" />}
+    >
+      {sessionFactors ? (
+        <UserAvatar
+          loginName={loginName ?? sessionFactors.factors?.user?.loginName}
+          displayName={sessionFactors.factors?.user?.displayName}
+          showDropdown
+          searchParams={searchParams}
+        />
+      ) : (
+        user && (
+          <UserAvatar loginName={user.preferredLoginName} displayName={human?.profile?.displayName} showDropdown={false} />
+        )
+      )}
+      {continueUrl && <VerifySuccessContinue continueUrl={continueUrl} />}
+    </LandingShell>
   );
 }

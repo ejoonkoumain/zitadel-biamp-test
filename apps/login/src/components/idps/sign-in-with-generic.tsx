@@ -1,14 +1,21 @@
 "use client";
 
+import { Box } from "@mui/material";
 import { forwardRef } from "react";
 import { BaseButton, SignInWithIdentityProviderProps } from "./base-button";
 
 export const SignInWithGeneric = forwardRef<HTMLButtonElement, SignInWithIdentityProviderProps>(
   function SignInWithGeneric(props, ref) {
-    const { children, name = "", className = "h-[50px]", ...restProps } = props;
+    const { children, name = "", ...restProps } = props;
     return (
-      <BaseButton {...restProps} ref={ref} className={className}>
-        {children ? children : <span className="w-full text-center">{name}</span>}
+      <BaseButton {...restProps} ref={ref}>
+        {children ? (
+          children
+        ) : (
+          <Box component="span" sx={{ width: "100%", textAlign: "center" }}>
+            {name}
+          </Box>
+        )}
       </BaseButton>
     );
   },
